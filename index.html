@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>untitled</title>
+    <style>
+        /* CSS Custom Properties for Theme Support */
+        :root {
+            --bg-color: #1c1c1e;
+            --window-bg: #2c2c2e;
+            --text-main: #f2f2f7;
+            --text-sub: #aeaea3;
+            --accent: #0a84ff;
+            --border: #48484a;
+            --card-hover: rgba(10, 132, 255, 0.15);
+            --input-bg: #3a3a3c;
+            --pool-bg: #3a3a3c;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #e4e9f0;
+            --window-bg: #ffffff;
+            --text-main: #1c1c1e;
+            --text-sub: #66666d;
+            --accent: #0076ff;
+            --border: #d1d1d6;
+            --card-hover: rgba(0, 118, 255, 0.08);
+            --input-bg: #ffffff;
+            --pool-bg: #f0f0f3;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1.clickable-title {
+            font-size: 3rem;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -2px;
+            cursor: pointer;
+            user-select: none;
+            transition: opacity 0.2s, transform 0.1s;
+            display: inline-block;
+        }
+        h1.clickable-title:hover { opacity: 0.8; transform: scale(1.02); }
+        h1.clickable-title:active { transform: scale(0.98); }
+
+        .subtitle {
+            color: var(--text-sub);
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+
+        /* Responsive Hub Grid Layout */
+        .hub-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+        }
+
+        .game-card {
+            background: var(--window-bg);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 120px;
+        }
+
+        .game-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            background-color: var(--card-hover);
+        }
+
+        .game-card .icon { font-size: 2.5rem; margin-bottom: 8px; }
+        .game-card h3 { margin: 0 0 5px 0; font-size: 1.1rem; }
+        
+        .badge {
+            background: #34c759; color: white; font-size: 0.65rem;
+            padding: 2px 8px; border-radius: 10px; display: inline-block;
+            margin: 0 auto 8px auto; font-weight: bold; text-transform: uppercase;
+        }
+        .badge.sim { background: #af52de; }
+        .badge.fps { background: #ff9500; }
+        .badge.io { background: #00c7b1; }
+        .badge.casual { background: #ff2d55; }
+
+        /* Form Controls */
+        .btn {
+            background: var(--accent); color: white; border: none;
+            padding: 10px 20px; border-radius: 10px; font-weight: 600;
+            font-size: 0.95rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn:active { transform: scale(0.97); }
+
+        .upgrade-btn {
+            background: #34c759; color: white; border: none;
+            padding: 6px 12px; border-radius: 8px; font-weight: bold;
+            font-size: 0.8rem; cursor: pointer; transition: background 0.2s;
+        }
+        .upgrade-btn:hover { background: #28a745; }
+        .upgrade-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+        input[type="text"], select {
+            width: 100%; padding: 12px 16px; border: 2px solid var(--border);
+            border-radius: 10px; outline: none; box-sizing: border-box;
+            background-color: var(--input-bg); color: var(--text-main);
+            font-size: 1rem; font-family: inherit; transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, select:focus { border-color: var(--accent); }
+
+        /* Window Container Popup */
+        .window-container {
+            width: 100%; max-width: 730px; background: var(--window-bg);
+            border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            border: 1px solid var(--border); display: none; overflow: hidden;
+            transition: background-color 0.3s; margin-bottom: 5px;
+        }
+        .window-container.active { display: block; animation: popIn 0.2s ease-out; }
+        @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .window-header {
+            background: rgba(255, 255, 255, 0.03); padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .close-btn { background: #ff5f56; border: none; width: 15px; height: 15px; border-radius: 50%; cursor: pointer; }
+        .window-body { padding: 25px; min-height: 380px; position: relative; box-sizing: border-box; }
+
+        /* Custom Framework Layouts */
+        .rule { padding: 12px; margin: 8px 0; border-radius: 8px; background: rgba(255, 59, 48, 0.15); color: #ff453a; border-left: 4px solid #ff3b30; text-align: left; }
+        .rule.passed { background: rgba(52, 199, 89, 0.15); color: #32d74b; border-left: 4px solid #34c759; }
+        
+        .element-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; justify-content: center; max-height: 220px; overflow-y: auto; padding: 5px; }
+        .element { background: var(--pool-bg); padding: 8px 14px; border-radius: 20px; cursor: pointer; border: 1px solid var(--border); user-select: none; font-weight: 500; font-size: 0.9rem; white-space: nowrap; }
+        .element.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .ticker { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid var(--border); }
+        #evading-button { position: absolute; transition: left 0.1s ease, top 0.1s ease; z-index: 10; }
+        .poll-option { background: var(--pool-bg); border: 2px solid transparent; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; position: relative; overflow: hidden; }
+        .poll-bar { background: rgba(10, 132, 255, 0.2); height: 100%; position: absolute; left: 0; top: 0; pointer-events: none; transition: width 0.6s ease-out; }
+        
+        .grid-boxing { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; max-width: 320px; margin: 15px auto; }
+        .box-cell { width: 48px; height: 48px; background: var(--pool-bg); border-radius: 8px; transition: background 0.1s; border: 1px solid var(--border); }
+        .box-cell.p1 { background: #ff3b30; border-color: #ff3b30; }
+        .box-cell.p2 { background: #0076ff; border-color: #0076ff; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+        /* Sandbox Element Styles */
+        .sandbox-canvas { background: #000000; display: block; margin: 10px auto; border: 2px solid var(--border); border-radius: 8px; cursor: crosshair; }
+        .sandbox-tools { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .tool-btn { background: var(--pool-bg); border: 1px solid var(--border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+        .tool-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* Canvas Style */
+        .game-canvas { background: #1a1525; display: block; margin: 10px auto; border: 3px solid var(--border); border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 class="clickable-title" onclick="openGame('settings')" title="Click for Settings">untitled</h1>
+        <div class="subtitle">A repository of sandbox toys and distractions. Click the header for parameters.</div>
+    </header>
+
+    <div class="hub-grid">
+        <div class="game-card" style="border-color: #ff2d55; grid-column: span 2;" onclick="openGame('fishing')">
+            <div>
+                <span class="badge casual">Tiny Fishing Mode</span>
+                <div class="icon">🎣</div>
+                <h3>Tiny Fishing</h3>
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin:5px 0 0 0;">Cast your line deep into the ocean, catch valuable fish on the way up, and upgrade your gear to reach legendary gold fish!</p>
+        </div>
+
+        <div class="game-card" style="border-color: #00c7b1; grid-column: span 2;" onclick="openGame('agar')">
+            <div>
+                <span class="badge io">Agar Mode</span>
+                <div class="icon">🔴</div>
+                <h3>Blob Growth Arena</h3>
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin:5px 0 0 0;">Eat smaller colorful dots to grow infinitely larger while avoiding rival AI cells!</p>
+        </div>
+
+        <div class="game-card" style="border-color: #00c7b1;" onclick="openGame('slither')">
+            <div>
+                <span class="badge io">Slither Mode</span>
+                <div class="icon">🐍</div>
+                <h3>Neon Snake .io</h3>
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin:5px 0 0 0;">Slither around with mouse steering, gathering glowing bits to expand your length.</p>
+        </div>
+
+        <div class="game-card" style="border-color: #00c7b1;" onclick="openGame('scribble')">
+            <div>
+                <span class="badge io">Scribble Mode</span>
+                <div class="icon">🎨</div>
+                <h3>Scribble Guess</h3>
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin:5px 0 0 0;">Draw the prompt secret word or guess what the AI is sketching!</p>
+        </div>
+
+        <div class="game-card" style="border-color: #ff9500; grid-column: span 2;" onclick="openGame('platform2d')">
+            <div>
+                <span class="badge fps">2D Pixel Platformer Duel</span>
+                <div class="icon">⚔️</div>
+                <h3>2D Split Gun Arena</h3>
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin:5px 0 0 0;">2D Side-scroller Action. P1 uses A/D, P2 uses Left/Right Arrows!</p>
+        </div>
+
+        <div class="game-card" style="border-color: #af52de;" onclick="openGame('sandboxels')">
+            <div>
+                <span class="badge sim">Physics Sandbox</span>
+                <div class="icon">⏳</div>
+                <h3>Sandbox Stimulation</h3>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:5px 0 0 0;">Falling particles & chemistry simulation grid.</p>
+        </div>
+        <div class="game-card" style="border-color: #af52de;" onclick="openGame('infcraft')">
+            <div>
+                <span class="badge sim">Infinite Craft</span>
+                <div class="icon">♾️</div>
+                <h3>Infinite Concepts</h3>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:5px 0 0 0;">Merge concepts to generate hidden discoveries.</p>
+        </div>
+        <div class="game-card" style="border-color: #af52de;" onclick="openGame('clicker')">
+            <div>
+                <span class="badge sim">Incremental Engine</span>
+                <div class="icon">🖱️</div>
+                <h3>Hyper Clicker</h3>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:5px 0 0 0;">Generate infinite data layers with saving structures.</p>
+        </div>
+
+        <div class="game-card" onclick="openGame('password')">
+            <div><div class="icon">🔒</div><h3>Password</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Arbitrary string validations.</p>
+        </div>
+        <div class="game-card" onclick="openGame('craft')">
+            <div><div class="icon">🧪</div><h3>Element Craft</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Combine simple elements.</p>
+        </div>
+        <div class="game-card" onclick="openGame('market')">
+            <div><div class="icon">📈</div><h3>Absurd Market</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Speculate on fluctuating commodities.</p>
+        </div>
+        <div class="game-card" onclick="openGame('button')">
+            <div><div class="icon">🔘</div><h3>The Button</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Catch fleeing targets.</p>
+        </div>
+        <div class="game-card" onclick="openGame('poll')">
+            <div><div class="icon">🤔</div><h3>Deep Questions</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Compare consensus models.</p>
+        </div>
+        <div class="game-card" onclick="openGame('typer')">
+            <div><div class="icon">⌨️</div><h3>Speed Typer</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Speed run characters.</p>
+        </div>
+        <div class="game-card" onclick="openGame('scale')">
+            <div><div class="icon">🌌</div><h3>The Scale</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Spatial scale slider interface.</p>
+        </div>
+
+        <div class="game-card" style="border: 1px solid #34c759;" onclick="openGame('boxing')">
+            <div><span class="badge">2 Player Local</span><div class="icon">🥊</div><h3>Grid Boxing</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">WASD vs Arrows matrix control.</p>
+        </div>
+        <div class="game-card" style="border: 1px solid #34c759;" onclick="openGame('dilemma')">
+            <div><span class="badge">2 Player Local</span><div class="icon">🤝</div><h3>The Dilemma</h3></div>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin:0;">Game theory mechanics.</p>
+        </div>
+    </div>
+
+    <div class="window-container" id="game-window">
+        <div class="window-header">
+            <button class="close-btn" onclick="closeGame()"></button>
+            <div class="window-title" id="window-title" style="font-weight:600;">System Module</div>
+            <div style="width: 15px;"></div>
+        </div>
+        <div class="window-body" id="window-body"></div>
+    </div>
+
+    <script>
+        let globalLoop;
+        let activeGame = '';
+        let mouseX = 320, mouseY = 160;
+        
+        // Track keyboard state globally
+        let keysPressed = {};
+        window.addEventListener('keydown', (e) => { 
+            keysPressed[e.key.toLowerCase()] = true; 
+            keysPressed[e.key] = true;
+        });
+        window.addEventListener('keyup', (e) => { 
+            keysPressed[e.key.toLowerCase()] = false; 
+            keysPressed[e.key] = false;
+        });
+
+        function openGame(gameType) {
+            const win = document.getElementById('game-window');
+            const title = document.getElementById('window-title');
+            const body = document.getElementById('window-body');
+            
+            body.style.position = 'relative';
+            win.classList.add('active');
+            clearInterval(globalLoop); 
+            activeGame = gameType;
+
+            if (gameType === 'settings') { title.innerText = "⚙️ System Configuration"; initSettingsPanel(body); }
+            else if (gameType === 'fishing') { title.innerText = "🎣 Tiny Fishing Adventure"; initFishingGame(body); }
+            else if (gameType === 'platform2d') { title.innerText = "⚔️ 2D Pixel Gun Arena"; initPlatformGame(body); }
+            else if (gameType === 'sandboxels') { title.innerText = "Falling Element Sandbox Stimulation"; initSandboxGame(body); }
+            else if (gameType === 'infcraft') { title.innerText = "♾️ Infinite Craft Box"; initInfiniteCraft(body); }
+            else if (gameType === 'clicker') { title.innerText = "Hyper Bit Clicker Evolution"; initClickerGame(body); }
+            else if (gameType === 'password') { title.innerText = "The Unreasonable Password"; initPasswordGame(body); }
+            else if (gameType === 'craft') { title.innerText = "Element Craft"; initCraftGame(body); }
+            else if (gameType === 'market') { title.innerText = "Absurd Stock Market"; initMarketGame(body); }
+            else if (gameType === 'button') { title.innerText = "Don't Miss"; initButtonGame(body); }
+            else if (gameType === 'poll') { title.innerText = "The Deepest Questions"; initPollGame(body); }
+            else if (gameType === 'typer') { title.innerText = "Speed Typer 1999"; initTyperGame(body); }
+            else if (gameType === 'scale') { title.innerText = "Scale of Everything"; initScaleGame(body); }
+            else if (gameType === 'boxing') { title.innerText = "Local Multiplayer: Grid Boxing"; initBoxingGame(body); }
+            else if (gameType === 'dilemma') { title.innerText = "Local Multiplayer: Prisoner's Dilemma"; initDilemmaGame(body); }
+            else if (gameType === 'agar') { title.innerText = "🔴 Blob Growth Arena (.io)"; initAgarGame(body); }
+            else if (gameType === 'slither') { title.innerText = "蛇 Neon Snake Arena (.io)"; initSlitherGame(body); }
+            else if (gameType === 'scribble') { title.innerText = "🎨 Scribble Guessing Box"; initScribbleGame(body); }
+        }
+
+        function closeGame() {
+            document.getElementById('game-window').classList.remove('active');
+            clearInterval(globalLoop); 
+            activeGame = '';
+        }
+
+        function trackMouse(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        }
+
+        /* -------------------------------------------
+           TINY FISHING ENGINE
+        ------------------------------------------- */
+        let fishCash = 0;
+        let fishUpgrades = { maxFish: 3, maxDepth: 200, offlineEarnings: 10 };
+        let fishGameState = 'idle'; 
+        let hookX = 320, hookY = 80, hookDepth = 0;
+        let oceanFish = [];
+        let caughtFish = [];
+
+        const fishTypes = [
+            { name: 'Minnow', value: 10, color: '#a29bfe', emoji: '🐟', minDepth: 20, maxDepth: 100 },
+            { name: 'Bass', value: 25, color: '#74b9ff', emoji: '🐠', minDepth: 50, maxDepth: 180 },
+            { name: 'Clownfish', value: 45, color: '#ffb142', emoji: '🐡', minDepth: 90, maxDepth: 250 },
+            { name: 'Jellyfish', value: 75, color: '#ff7675', emoji: '🪼', minDepth: 150, maxDepth: 350 },
+            { name: 'Golden Koi', value: 150, color: '#ffd700', emoji: '🦑', minDepth: 200, maxDepth: 500 }
+        ];
+
+        function initFishingGame(c) {
+            fishGameState = 'idle';
+            caughtFish = [];
+            hookX = 320;
+            hookY = 60;
+            hookDepth = 0;
+            generateOceanFish();
+            renderFishingUI(c);
+            setupFishingLoop();
+        }
+
+        function renderFishingUI(c) {
+            c.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-weight:bold;">
+                    <span style="color:#ffd700; font-size:1.2rem;">💰 Cash: $<span id="fish-cash">${fishCash}</span></span>
+                    <button class="btn" id="cast-btn" onclick="castLine()">CAST LINE</button>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
+                    <button class="upgrade-btn" id="up-count" onclick="upgradeFishing('maxFish')">🎣 Max Fish (+1)<br>$<span id="cost-count">40</span></button>
+                    <button class="upgrade-btn" id="up-depth" onclick="upgradeFishing('maxDepth')">⚓ Deep Line (+50m)<br>$<span id="cost-depth">60</span></button>
+                    <button class="upgrade-btn" id="up-cash" onclick="upgradeFishing('offlineEarnings')">📈 Passive (+5)<br>$<span id="cost-cash">50</span></button>
+                </div>
+                <canvas id="fishingCanvas" class="game-canvas" width="640" height="340" style="background:linear-gradient(to bottom, #74b9ff 0%, #0984e3 20%, #2c3e50 100%); cursor:crosshair;"></canvas>
+                <div id="fishing-tip" style="font-size:0.8rem; text-align:center; color:var(--text-sub);">Click CAST to drop your line! Move mouse left/right to catch fish on the way up.</div>
+            `;
+            updateUpgradeButtons();
+        }
+
+        function updateUpgradeButtons() {
+            const costCount = fishUpgrades.maxFish * 35;
+            const costDepth = (fishUpgrades.maxDepth / 50) * 45;
+            const costCash = fishUpgrades.offlineEarnings * 8;
+
+            document.getElementById('cost-count').innerText = costCount;
+            document.getElementById('cost-depth').innerText = Math.floor(costDepth);
+            document.getElementById('cost-cash').innerText = costCash;
+
+            document.getElementById('up-count').disabled = fishCash < costCount;
+            document.getElementById('up-depth').disabled = fishCash < costDepth;
+            document.getElementById('up-cash').disabled = fishCash < costCash;
+            document.getElementById('fish-cash').innerText = fishCash;
+        }
+
+        function upgradeFishing(type) {
+            let cost = 0;
+            if (type === 'maxFish') {
+                cost = fishUpgrades.maxFish * 35;
+                if (fishCash >= cost) { fishCash -= cost; fishUpgrades.maxFish += 1; }
+            } else if (type === 'maxDepth') {
+                cost = (fishUpgrades.maxDepth / 50) * 45;
+                if (fishCash >= cost) { fishCash -= cost; fishUpgrades.maxDepth += 50; }
+            } else if (type === 'offlineEarnings') {
+                cost = fishUpgrades.offlineEarnings * 8;
+                if (fishCash >= cost) { fishCash -= cost; fishUpgrades.offlineEarnings += 5; }
+            }
+            updateUpgradeButtons();
+        }
+
+        function generateOceanFish() {
+            oceanFish = [];
+            for (let i = 0; i < 45; i++) {
+                let targetY = 80 + Math.random() * (fishUpgrades.maxDepth + 100);
+                let viable = fishTypes.filter(f => targetY >= f.minDepth);
+                if (viable.length === 0) viable = [fishTypes[0]];
+                let type = viable[Math.floor(Math.random() * viable.length)];
+
+                oceanFish.push({
+                    x: Math.random() * 600 + 20,
+                    y: targetY,
+                    type: type,
+                    speed: (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
+                    caught: false
+                });
+            }
+        }
+
+        function castLine() {
+            if (fishGameState !== 'idle') return;
+            fishGameState = 'descending';
+            caughtFish = [];
+            hookY = 60;
+            hookDepth = 0;
+            document.getElementById('cast-btn').disabled = true;
+            document.getElementById('fishing-tip').innerText = "Dropping line down deep into the ocean...";
+        }
+
+        function setupFishingLoop() {
+            const canvas = document.getElementById('fishingCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.onmousemove = (e) => trackMouse(e, canvas);
+
+            globalLoop = setInterval(() => {
+                if (fishGameState === 'descending') {
+                    hookDepth += 6;
+                    if (hookDepth >= fishUpgrades.maxDepth) {
+                        fishGameState = 'ascending';
+                        document.getElementById('fishing-tip').innerText = "REEL IT IN! Sway mouse left/right to hook the fish!";
+                    }
+                } else if (fishGameState === 'ascending') {
+                    hookDepth -= 3.5;
+                    hookX += (mouseX - hookX) * 0.2; 
+
+                    oceanFish.forEach(f => {
+                        if (!f.caught && caughtFish.length < fishUpgrades.maxFish) {
+                            let visualFishY = f.y - hookDepth + 60;
+                            let dx = f.x - hookX;
+                            let dy = visualFishY - hookY;
+                            if (Math.sqrt(dx*dx + dy*dy) < 22 && visualFishY > 50) {
+                                f.caught = true;
+                                caughtFish.push(f);
+                            }
+                        }
+                    });
+
+                    if (hookDepth <= 0) {
+                        fishGameState = 'results';
+                        let earnings = caughtFish.reduce((sum, f) => sum + f.type.value, 0);
+                        fishCash += earnings;
+                        
+                        setTimeout(() => {
+                            alert(`Line Reeled In!\nYou caught ${caughtFish.length} fish and earned $${earnings}!`);
+                            fishGameState = 'idle';
+                            document.getElementById('cast-btn').disabled = false;
+                            document.getElementById('fishing-tip').innerText = "Click CAST LINE to fish again!";
+                            generateOceanFish();
+                            updateUpgradeButtons();
+                        }, 200);
+                    }
+                }
+
+                oceanFish.forEach(f => {
+                    if (!f.caught) {
+                        f.x += f.speed;
+                        if (f.x < 10 || f.x > 630) f.speed *= -1;
+                    } else {
+                        f.x = hookX + (Math.random() * 10 - 5);
+                        f.y = hookDepth + hookY + 15 + (caughtFish.indexOf(f) * 12);
+                    }
+                });
+
+                ctx.clearRect(0,0,640,340);
+
+                if (hookDepth < 80) {
+                    ctx.fillStyle = '#81ecec';
+                    ctx.fillRect(0, 0, 640, 50 - hookDepth);
+                }
+
+                if (hookDepth < 60) {
+                    ctx.fillStyle = '#d63031';
+                    ctx.fillRect(290, 30 - hookDepth, 60, 20);
+                }
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(320, hookDepth < 60 ? 45 - hookDepth : 0);
+                ctx.lineTo(hookX, hookY);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#b2bec3';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(hookX, hookY, 6, 0, Math.PI);
+                ctx.stroke();
+
+                oceanFish.forEach(f => {
+                    let screenY = f.y - hookDepth + 60;
+                    if (screenY > -20 && screenY < 360) {
+                        ctx.fillStyle = f.type.color;
+                        ctx.beginPath();
+                        ctx.arc(f.x, screenY, 12, 0, Math.PI*2);
+                        ctx.fill();
+
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '12px Arial';
+                        ctx.fillText(f.type.emoji, f.x - 8, screenY + 4);
+                    }
+                });
+
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(`Current Line Depth Target: ${Math.floor(hookDepth)}m / ${fishUpgrades.maxDepth}m`, 20, 320);
+
+            }, 1000/30);
+        }
+
+        /* -------------------------------------------
+           AGAR STYLE - BLOB GROWTH ARENA
+        ------------------------------------------- */
+        let agarPlayer, agarFoods, agarEnemies;
+        function initAgarGame(c) {
+            agarPlayer = { x: 320, y: 160, r: 15, score: 0 };
+            agarFoods = [];
+            agarEnemies = [];
+            
+            for(let i=0; i<40; i++) spawnAgarFood();
+            for(let i=0; i<5; i++) {
+                agarEnemies.push({
+                    x: Math.random() * 640, y: Math.random() * 320,
+                    r: Math.random() * 15 + 10,
+                    color: `hsl(${Math.random() * 360}, 80%, 50%)`,
+                    vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4
+                });
+            }
+
+            c.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
+                    <span style="color:var(--accent);">Your Size: <span id="agar-size">15</span></span>
+                    <span style="color:#34c759;">Score: <span id="agar-score">0</span></span>
+                </div>
+                <canvas id="agarCanvas" class="game-canvas" width="640" height="320" style="background:#111;"></canvas>
+                <div style="font-size:0.8rem; text-align:center; color:var(--text-sub);">Move your mouse inside the arena to steer. Eat smaller cells, flee from bigger ones!</div>
+            `;
+
+            const canvas = document.getElementById('agarCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.onmousemove = (e) => trackMouse(e, canvas);
+
+            globalLoop = setInterval(() => {
+                let dx = mouseX - agarPlayer.x;
+                let dy = mouseY - agarPlayer.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                let speed = Math.max(1.5, 80 / agarPlayer.r); 
+                if(dist > 5) {
+                    agarPlayer.x += (dx / dist) * speed;
+                    agarPlayer.y += (dy / dist) * speed;
+                }
+
+                agarEnemies.forEach(en => {
+                    en.x += en.vx; en.y += en.vy;
+                    if(en.x < 0 || en.x > 640) en.vx *= -1;
+                    if(en.y < 0 || en.y > 320) en.vy *= -1;
+
+                    let pDx = agarPlayer.x - en.x;
+                    let pDy = agarPlayer.y - en.y;
+                    let pDist = Math.sqrt(pDx*pDx + pDy*pDy);
+                    if(pDist < en.r + agarPlayer.r) {
+                        if(en.r > agarPlayer.r * 1.1) {
+                            agarPlayer.r = Math.max(10, agarPlayer.r - 4);
+                            agarPlayer.score = Math.max(0, agarPlayer.score - 5);
+                        } else if(agarPlayer.r > en.r * 1.1) {
+                            agarPlayer.r += en.r * 0.3;
+                            agarPlayer.score += 20;
+                            en.x = Math.random() * 640; en.y = Math.random() * 320; en.r = Math.random() * 15 + 10;
+                        }
+                    }
+                });
+
+                for(let i = agarFoods.length - 1; i >= 0; i--) {
+                    let f = agarFoods[i];
+                    let fDx = agarPlayer.x - f.x;
+                    let fDy = agarPlayer.y - f.y;
+                    let fDist = Math.sqrt(fDx*fDx + fDy*fDy);
+                    if(fDist < agarPlayer.r) {
+                        agarPlayer.r += 0.6;
+                        agarPlayer.score += 1;
+                        agarFoods.splice(i, 1);
+                        spawnAgarFood();
+                    }
+                }
+
+                ctx.clearRect(0,0,640,320);
+                ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+                for(let i=0; i<640; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,320); ctx.stroke(); }
+                for(let j=0; j<320; j+=40) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(640,j); ctx.stroke(); }
+
+                agarFoods.forEach(f => {
+                    ctx.fillStyle = f.color;
+                    ctx.beginPath(); ctx.arc(f.x, f.y, 4, 0, Math.PI*2); ctx.fill();
+                });
+
+                agarEnemies.forEach(en => {
+                    ctx.fillStyle = en.color;
+                    ctx.beginPath(); ctx.arc(en.x, en.y, en.r, 0, Math.PI*2); ctx.fill();
+                });
+
+                ctx.fillStyle = '#0a84ff';
+                ctx.beginPath(); ctx.arc(agarPlayer.x, agarPlayer.y, agarPlayer.r, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+                document.getElementById('agar-size').innerText = Math.floor(agarPlayer.r);
+                document.getElementById('agar-score').innerText = agarPlayer.score;
+            }, 1000/30);
+        }
+        function spawnAgarFood() {
+            agarFoods.push({ x: Math.random()*640, y: Math.random()*320, color: `hsl(${Math.random()*360}, 100%, 60%)` });
+        }
+
+        /* -------------------------------------------
+           SLITHER MODE (NEON SNAKE .IO)
+        ------------------------------------------- */
+        let slitherSegments, slitherOrbs, slitherLen;
+        function initSlitherGame(c) {
+            slitherSegments = [{x: 320, y: 160}];
+            slitherLen = 12;
+            slitherOrbs = [];
+            for(let i=0; i<30; i++) spawnSlitherOrb();
+
+            c.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
+                    <span style="color:#00c7b1;">Snake Length: <span id="slither-score">12</span></span>
+                </div>
+                <canvas id="slitherCanvas" class="game-canvas" width="640" height="320" style="background:#09090e; border-color:#00c7b1;"></canvas>
+                <div style="font-size:0.8rem; text-align:center; color:var(--text-sub);">Guide the glowing neon snake tail with your pointer position. Collect particles to elongate!</div>
+            `;
+
+            const canvas = document.getElementById('slitherCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.onmousemove = (e) => trackMouse(e, canvas);
+
+            globalLoop = setInterval(() => {
+                let head = slitherSegments[0];
+                let dx = mouseX - head.x;
+                let dy = mouseY - head.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                let targetX = head.x;
+                let targetY = head.y;
+                if(dist > 2) {
+                    targetX += (dx / dist) * 5;
+                    targetY += (dy / dist) * 5;
+                }
+                
+                slitherSegments.unshift({x: targetX, y: targetY});
+                while(slitherSegments.length > slitherLen) {
+                    slitherSegments.pop();
+                }
+
+                for(let i=slitherOrbs.length-1; i>=0; i--) {
+                    let o = slitherOrbs[i];
+                    let odx = targetX - o.x;
+                    let ody = targetY - o.y;
+                    if(Math.sqrt(odx*odx + ody*ody) < 14) {
+                        slitherLen += 2;
+                        slitherOrbs.splice(i, 1);
+                        spawnSlitherOrb();
+                    }
+                }
+
+                ctx.clearRect(0,0,640,320);
+                
+                slitherOrbs.forEach(o => {
+                    ctx.shadowBlur = 10; ctx.shadowColor = o.color;
+                    ctx.fillStyle = o.color;
+                    ctx.beginPath(); ctx.arc(o.x, o.y, 5, 0, Math.PI*2); ctx.fill();
+                });
+                ctx.shadowBlur = 0; 
+
+                for(let i=slitherSegments.length-1; i>=0; i--) {
+                    let seg = slitherSegments[i];
+                    ctx.fillStyle = `hsla(${(200 + i*4)%360}, 90%, 60%, ${1 - (i/slitherSegments.length)*0.6})`;
+                    ctx.beginPath();
+                    ctx.arc(seg.x, seg.y, i === 0 ? 9 : 7, 0, Math.PI*2);
+                    ctx.fill();
+                }
+
+                document.getElementById('slither-score').innerText = slitherLen;
+            }, 1000/30);
+        }
+        function spawnSlitherOrb() {
+            slitherOrbs.push({ x: Math.random()*620+10, y: Math.random()*300+10, color: `hsl(${Math.random()*360}, 100%, 70%)` });
+        }
+
+        /* -------------------------------------------
+           SCRIBBLE MODE (DRAW & GUESS MACHINE)
+        ------------------------------------------- */
+        let scribbleDrawing, isScribbling, scribbleWord, currentTask;
+        const secretWords = ["Cat", "House", "Tree", "Sword", "Car", "Sun", "Smile", "Fish"];
+        
+        function initScribbleGame(c) {
+            scribbleDrawing = [];
+            isScribbling = false;
+            scribbleWord = secretWords[Math.floor(Math.random() * secretWords.length)];
+            currentTask = Math.random() > 0.5 ? 'draw' : 'guess';
+
+            setupScribbleInterface(c);
+        }
+
+        function setupScribbleInterface(c) {
+            if(currentTask === 'draw') {
+                c.innerHTML = `
+                    <div style="text-align:center; margin-bottom:10px;">
+                        <span style="font-size:1.1rem; font-weight:bold;">Your Turn to Draw Word: <span style="color:#0a84ff; text-transform:uppercase;">"${scribbleWord}"</span></span>
+                    </div>
+                    <canvas id="scribbleCanvas" class="sandbox-canvas" width="400" height="240" style="background:#fff; border:3px solid var(--border);"></canvas>
+                    <div style="text-align:center; margin-top:10px;">
+                        <button class="btn" onclick="submitScribble('draw')">AI Guess My Drawing!</button>
+                        <button class="tool-btn" style="margin-left:10px;" onclick="clearScribble()">Clear Canvas</button>
+                    </div>
+                `;
+            } else {
+                scribbleDrawing = [];
+                generateAICraftPath();
+                c.innerHTML = `
+                    <div style="text-align:center; margin-bottom:10px;">
+                        <span style="font-size:1.1rem; font-weight:bold; color:#ff9500;">AI is Drawing! Guess the item:</span>
+                    </div>
+                    <canvas id="scribbleCanvas" class="sandbox-canvas" width="400" height="240" style="background:#fff; border:3px solid var(--border); pointer-events:none;"></canvas>
+                    <div style="display:flex; gap:10px; margin-top:12px; justify-content:center;">
+                        <input type="text" id="scribble-guess-input" style="max-width:200px;" placeholder="Type word...">
+                        <button class="btn" onclick="submitScribble('guess')">Submit Guess</button>
+                    </div>
+                `;
+            }
+
+            const canvas = document.getElementById('scribbleCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            if(currentTask === 'draw') {
+                canvas.onmousedown = (e) => { isScribbling = true; addScribblePoint(e, canvas); };
+                canvas.onmousemove = (e) => { if(isScribbling) addScribblePoint(e, canvas); };
+                window.onmouseup = () => { isScribbling = false; ctx.beginPath(); };
+            } else {
+                let step = 0;
+                globalLoop = setInterval(() => {
+                    if(step < scribbleDrawing.length) {
+                        ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+                        let pt = scribbleDrawing[step];
+                        if(pt.blank) { ctx.beginPath(); }
+                        else { ctx.lineTo(pt.x, pt.y); ctx.stroke(); }
+                        step++;
+                    }
+                }, 40);
+            }
+        }
+
+        function addScribblePoint(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const ctx = canvas.getContext('2d');
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+            ctx.lineTo(x, y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x, y);
+        }
+
+        function generateAICraftPath() {
+            scribbleDrawing = [{blank:true}];
+            for (let i=0; i<=100; i+=10) scribbleDrawing.push({x: 150+i, y: 180}); 
+            for (let i=0; i<=60; i+=10) scribbleDrawing.push({x: 250, y: 180-i}); 
+            for (let i=0; i<=100; i+=10) scribbleDrawing.push({x: 250-i, y: 120}); 
+            for (let i=0; i<=60; i+=10) scribbleDrawing.push({x: 150, y: 120+i}); 
+            scribbleDrawing.push({blank:true});
+            for (let i=0; i<=50; i+=10) scribbleDrawing.push({x: 150+i, y: 120-i*0.8}); 
+            for (let i=0; i<=50; i+=10) scribbleDrawing.push({x: 200+i, y: 80+i*0.8});  
+        }
+
+        function clearScribble() {
+            const canvas = document.getElementById('scribbleCanvas');
+            if(canvas) canvas.getContext('2d').clearRect(0,0,400,240);
+        }
+
+        function submitScribble(mode) {
+            clearInterval(globalLoop);
+            const b = document.getElementById('window-body');
+            if(mode === 'draw') {
+                alert(`The AI analyzed your structural layout lines and successfully guessed it is a "${scribbleWord}"!`);
+            } else {
+                let userGuess = document.getElementById('scribble-guess-input')?.value.trim().toLowerCase();
+                if(userGuess === scribbleWord.toLowerCase()) {
+                    alert(`Correct! You successfully recognized the sketch definition of a "${scribbleWord}".`);
+                } else {
+                    alert(`Close guess! The correct prompt answer was "${scribbleWord}".`);
+                }
+            }
+            initScribbleGame(b); 
+        }
+
+        /* -------------------------------------------
+           PRE-EXISTING CORE GAME LOOPS
+        ------------------------------------------- */
+        let platforms = [
+            { x: 0, y: 290, w: 640, h: 30 },    
+            { x: 50, y: 210, w: 120, h: 15 },   
+            { x: 180, y: 230, w: 120, h: 15 },  
+            { x: 340, y: 240, w: 140, h: 15 },  
+            { x: 230, y: 150, w: 180, h: 15 }   
+        ];
+
+        let p1_2d, p2_2d, projectiles, p1_score = 0, p2_score = 0;
+
+        function initPlatformGame(c) {
+            reset2DMatch();
+            c.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
+                    <span style="color:#ff453a;">P1 (A/D): ❤️ <span id="hp2d_1">100</span> | Wins: <span id="sc2d_1">${p1_score}</span></span>
+                    <span style="color:#0a84ff;">P2 (◀/▶): ❤️ <span id="hp2d_2">100</span> | Wins: <span id="sc2d_2">${p2_score}</span></span>
+                </div>
+                <canvas id="platformCanvas" class="game-canvas" width="640" height="320"></canvas>
+                <div style="font-size:0.8rem; text-align:center; color:var(--text-sub); line-height:1.4;">
+                    <strong>Player 1:</strong> A / D to run. <strong>Player 2:</strong> Left / Right Arrows to run.<br>
+                    Running into walls forces your character to automatic-jump! Guns auto-fire straight ahead.
+                </div>
+            `;
+
+            const canvas = document.getElementById('platformCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            globalLoop = setInterval(() => {
+                updatePlatformLogic();
+                renderPlatformGame(ctx);
+            }, 1000 / 30);
+        }
+
+        function reset2DMatch() {
+            p1_2d = { x: 80, y: 100, w: 20, h: 26, vx: 0, vy: 0, dir: 1, health: 100, color: '#ff453a', shootTimer: 0 };
+            p2_2d = { x: 540, y: 100, w: 20, h: 26, vx: 0, vy: 0, dir: -1, health: 100, color: '#0a84ff', shootTimer: 0 };
+            projectiles = [];
+        }
+
+        function updatePlatformLogic() {
+            const moveSpeed = 4.5;
+            const gravity = 1.2;
+            const jumpForce = -14;
+
+            p1_2d.vx = 0;
+            if (keysPressed['a']) { p1_2d.vx = -moveSpeed; p1_2d.dir = -1; }
+            if (keysPressed['d']) { p1_2d.vx = moveSpeed; p1_2d.dir = 1; }
+
+            p2_2d.vx = 0;
+            if (keysPressed['ArrowLeft']) { p2_2d.vx = -moveSpeed; p2_2d.dir = -1; }
+            if (keysPressed['ArrowRight']) { p2_2d.vx = moveSpeed; p2_2d.dir = 1; }
+
+            [p1_2d, p2_2d].forEach(p => {
+                p.vy += gravity; p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = 0; if (p.x > 640 - p.w) p.x = 640 - p.w;
+
+                let onGround = false;
+                platforms.forEach(plat => {
+                    if (p.x + p.w > plat.x && p.x < plat.x + plat.w) {
+                        if (p.y + p.h >= plat.y && p.y + p.h - p.vy <= plat.y) {
+                            p.y = plat.y - p.h; p.vy = 0; onGround = true;
+                        }
+                    }
+                    if (p.y + p.h > plat.y && p.y < plat.y + plat.h) {
+                        if (p.x + p.w >= plat.x && p.x < plat.x + plat.w) {
+                            if (onGround || Math.random() > 0.5) p.vy = jumpForce;
+                        }
+                    }
+                });
+
+                p.shootTimer++;
+                if (p.shootTimer >= 10) {
+                    p.shootTimer = 0;
+                    projectiles.push({ x: p.dir === 1 ? p.x + p.w : p.x, y: p.y + p.h / 2 - 3, vx: p.dir * 12, owner: p });
+                }
+            });
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let b = projectiles[i]; b.x += b.vx;
+                if (b.x < 0 || b.x > 640) { projectiles.splice(i, 1); continue; }
+                let target = (b.owner === p1_2d) ? p2_2d : p1_2d;
+                if (b.x > target.x && b.x < target.x + target.w && b.y > target.y && b.y < target.y + target.h) {
+                    target.health -= 10; projectiles.splice(i, 1);
+                    if (target.health <= 0) {
+                        if (target === p1_2d) p2_score++; else p1_score++;
+                        reset2DMatch();
+                    }
+                }
+            }
+
+            if(document.getElementById('hp2d_1')) {
+                document.getElementById('hp2d_1').innerText = p1_2d.health;
+                document.getElementById('hp2d_2').innerText = p2_2d.health;
+                document.getElementById('sc2d_1').innerText = p1_score;
+                document.getElementById('sc2d_2').innerText = p2_score;
+            }
+        }
+
+        function renderPlatformGame(ctx) {
+            ctx.fillStyle = '#251e33'; ctx.fillRect(0, 0, 640, 320);
+            ctx.fillStyle = '#1f192b';
+            for (let y = 0; y < 320; y += 40) {
+                ctx.fillRect(0, y, 640, 2);
+                for (let x = (y % 80); x < 640; x += 80) ctx.fillRect(x, y, 2, 40);
+            }
+
+            let windows = [160, 440];
+            windows.forEach(wx => {
+                ctx.fillStyle = '#0f0c18'; ctx.beginPath(); ctx.arc(wx + 20, 100, 20, Math.PI, 0);
+                ctx.fillRect(wx, 100, 40, 35); ctx.fill(); ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2; ctx.stroke();
+            });
+
+            platforms.forEach(plat => {
+                ctx.fillStyle = '#34495e'; ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+                ctx.fillStyle = '#2c3e50'; ctx.fillRect(plat.x, plat.y, plat.w, 4);
+                ctx.fillStyle = '#c0392b'; ctx.fillRect(plat.x - 3, plat.y + 2, 3, plat.h - 4); ctx.fillRect(plat.x + plat.w, plat.y + 2, 3, plat.h - 4);
+            });
+
+            ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(70, 255, 6, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(68, 259, 4, 12);
+            ctx.fillStyle = '#7f8c8d'; ctx.fillRect(560, 250, 16, 40);
+
+            ctx.fillStyle = '#f5f6fa'; ctx.fillRect(p1_2d.x + 3, p1_2d.y, 14, 14);
+            ctx.fillStyle = p1_2d.color; ctx.fillRect(p1_2d.x, p1_2d.y + 14, 20, 12);
+            ctx.fillStyle = '#2f3640'; ctx.fillRect(p1_2d.x + (p1_2d.dir === 1 ? 16 : -6), p1_2d.y + 10, 10, 5);
+
+            ctx.fillStyle = '#718093'; ctx.fillRect(p2_2d.x + 2, p2_2d.y, 16, 14);
+            ctx.fillStyle = p2_2d.color; ctx.fillRect(p2_2d.x, p2_2d.y + 14, 20, 12);
+            ctx.fillStyle = '#2f3640'; ctx.fillRect(p2_2d.x + (p2_2d.dir === 1 ? 16 : -6), p2_2d.y + 10, 10, 5);
+
+            projectiles.forEach(b => {
+                ctx.fillStyle = b.owner === p1_2d ? '#ff7675' : '#74b9ff';
+                ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
+            });
+        }
+
+        /* SANDBOXELS PHYSICS ENGINE */
+        function initSandboxGame(c) {
+            c.innerHTML = `
+                <div class="sandbox-tools">
+                    <button class="tool-btn active" onclick="setSandboxTool(this, 'sand')">⏳ Sand</button>
+                    <button class="tool-btn" onclick="setSandboxTool(this, 'water')">💧 Water</button>
+                    <button class="tool-btn" onclick="setSandboxTool(this, 'fire')">🔥 Fire</button>
+                    <button class="tool-btn" onclick="setSandboxTool(this, 'plant')">🌱 Plant</button>
+                    <button class="tool-btn" onclick="setSandboxTool(this, 'wall')">🧱 Wall</button>
+                    <button class="tool-btn" style="background:#ff3b30; color:white;" onclick="clearSandbox()">🧹 Clear</button>
+                </div>
+                <canvas id="sandboxCanvas" class="sandbox-canvas" width="300" height="300"></canvas>
+            `;
+            initSandboxSimulation();
+        }
+
+        let sandGrid = []; const sWidth = 60, sHeight = 60, cellSize = 5; let activeTool = 'sand'; let isDrawingSandbox = false;
+        function initSandboxSimulation() {
+            sandGrid = Array(sWidth).fill(null).map(() => Array(sHeight).fill('empty'));
+            const canvas = document.getElementById('sandboxCanvas'); if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const getMousePos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                return { x: Math.floor((e.clientX - rect.left) / cellSize), y: Math.floor((e.clientY - rect.top) / cellSize) };
+            };
+            canvas.onmousedown = (e) => { isDrawingSandbox = true; spawnElement(getMousePos(e)); };
+            window.onmouseup = () => { isDrawingSandbox = false; };
+            canvas.onmousemove = (e) => { if(isDrawingSandbox) spawnElement(getMousePos(e)); };
+            globalLoop = setInterval(() => { updateSandboxPhysics(); drawSandbox(ctx); }, 30);
+        }
+        function setSandboxTool(btn, tool) { document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); activeTool = tool; }
+        function clearSandbox() { sandGrid = Array(sWidth).fill(null).map(() => Array(sHeight).fill('empty')); }
+        function spawnElement(pos) {
+            if(pos.x >= 0 && pos.x < sWidth && pos.y >= 0 && pos.y < sHeight) {
+                sandGrid[pos.x][pos.y] = activeTool;
+            }
+        }
+        function updateSandboxPhysics() {
+            for (let y = sHeight - 1; y >= 0; y--) {
+                for (let x = 0; x < sWidth; x++) {
+                    let current = sandGrid[x][y];
+                    if (current === 'sand' && y + 1 < sHeight && sandGrid[x][y+1] === 'empty') {
+                        sandGrid[x][y+1] = 'sand'; sandGrid[x][y] = 'empty';
+                    } else if (current === 'water' && y + 1 < sHeight && sandGrid[x][y+1] === 'empty') {
+                        sandGrid[x][y+1] = 'water'; sandGrid[x][y] = 'empty';
+                    }
+                }
+            }
+        }
+        function drawSandbox(ctx) {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 300);
+            for (let x = 0; x < sWidth; x++) {
+                for (let y = 0; y < sHeight; y++) {
+                    let type = sandGrid[x][y];
+                    if (type !== 'empty') {
+                        if (type === 'sand') ctx.fillStyle = '#e0c068';
+                        else if (type === 'water') ctx.fillStyle = '#0076ff';
+                        else if (type === 'fire') ctx.fillStyle = '#ff3b30';
+                        else if (type === 'plant') ctx.fillStyle = '#34c759';
+                        else if (type === 'wall') ctx.fillStyle = '#8e8e93';
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+        }
+
+        /* INFINITE CRAFT MINI */
+        let infInventory = ['💧 Water', '🔥 Fire', '🌎 Earth', '💨 Air']; let activeInfMix = [];
+        const infRecipes = { '💧 Water+🔥 Fire': '💨 Steam', '💧 Water+🌎 Earth': '🌱 Mud', '🔥 Fire+🌎 Earth': '🌋 Lava' };
+        function initInfiniteCraft(c) { activeInfMix = []; renderInfiniteCraft(c); }
+        function renderInfiniteCraft(c) {
+            c.innerHTML = `
+                <div style="background:rgba(0,0,0,0.15); padding:15px; text-align:center; min-height:40px; border-radius:10px;" id="mix-bench">Empty</div>
+                <div class="element-pool" id="inf-pool"></div>
+            `;
+            const pool = document.getElementById('inf-pool');
+            infInventory.forEach(item => {
+                const node = document.createElement('div'); node.className = 'element'; node.innerText = item;
+                node.onclick = () => {
+                    if(activeInfMix.length < 2) activeInfMix.push(item);
+                    if(activeInfMix.length === 2) {
+                        let res = infRecipes[`${activeInfMix[0]}+${activeInfMix[1]}`] || infRecipes[`${activeInfMix[1]}+${activeInfMix[0]}`];
+                        if(res && !infInventory.includes(res)) infInventory.push(res);
+                        activeInfMix = []; renderInfiniteCraft(c);
+                    }
+                };
+                pool.appendChild(node);
+            });
+        }
+
+        /* IDLE HYPER CLICKER */
+        let clickerData = { bits: 0, bitMultiplier: 1 };
+        function initClickerGame(c) {
+            c.innerHTML = `<h1 id="bit-display" style="text-align:center; font-size:2.5rem; color:var(--accent);">0 Bits</h1><button class="btn" style="width:100%; padding:15px;" onclick="clickMainBit()">Process Matrix Core</button>`;
+            globalLoop = setInterval(() => {
+                if(!document.getElementById('bit-display')) return;
+                document.getElementById('bit-display').innerText = `${Math.floor(clickerData.bits)} Bits`;
+            }, 100);
+        }
+        function clickMainBit() { clickerData.bits += 1 * clickerData.bitMultiplier; }
+
+        /* CORE GENERIC SYSTEM TOOLS */
+        function initSettingsPanel(c) {
+            c.innerHTML = `<div class="setting-row"><div><strong>Dark/Light Theme</strong></div><select id="theme-select" onchange="changeTheme()"><option value="dark">Dark Mode</option><option value="light">Light Mode</option></select></div>`;
+        }
+        function changeTheme() { document.documentElement.setAttribute('data-theme', document.getElementById('theme-select').value); }
+        function initPasswordGame(c) { c.innerHTML = `<input type="text" placeholder="Type letters..."><div class="rule">Rule 1: Requires standard key alphanumeric tracking.</div>`; }
+        function initCraftGame(c) { c.innerHTML = `<div class="element">Crafting station down.</div>`; }
+        function initMarketGame(c) { c.innerHTML = `<div class="ticker">Market index locked under structural reset.</div>`; }
+        function initButtonGame(c) { c.innerHTML = `<button class="btn" id="evading-button">Catch Matrix</button>`; }
+        function initPollGame(c) { c.innerHTML = `<div class="poll-option">Is space infinite?</div>`; }
+        function initTyperGame(c) { c.innerHTML = `<input type="text" placeholder="Match prompt sequences...">`; }
+        function initScaleGame(c) { c.innerHTML = `<h3>Scale Matrix Sliders active</h3>`; }
+        function initBoxingGame(c) { c.innerHTML = `<h3>Local Grid Boxing Module active</h3>`; }
+        function initDilemmaGame(c) { c.innerHTML = `<h3>Game theory Matrix calculations initialized</h3>`; }
+    </script>
+</body>
+</html>
