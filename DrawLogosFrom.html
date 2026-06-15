@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw Logos From Memory</title>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+
+        h1 {
+            color: #38bdf8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .prompt-container {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background-color: #1e293b;
+            padding: 10px 30px;
+            border-radius: 30px;
+            border: 2px solid #334155;
+            color: #fbbf24;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .game-boards {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .board-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .board-title {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        canvas {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .reveal-box {
+            width: 350px;
+            height: 350px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .reveal-box img {
+            max-width: 80%;
+            max-height: 80%;
+            object-fit: contain;
+            display: none;
+        }
+
+        .hidden-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1e293b;
+            color: #64748b;
+            font-size: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 12px;
+        }
+
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-clear { background-color: #475569; color: white; }
+        .btn-clear:hover { background-color: #334155; }
+
+        .btn-reveal { background-color: #10b981; color: white; }
+        .btn-reveal:hover { background-color: #059669; }
+
+        .btn-next { background-color: #2563eb; color: white; }
+        .btn-next:hover { background-color: #1d4ed8; }
+    </style>
+</head>
+<body>
+
+    <h1>Draw Logos From Memory</h1>
+    <div class="prompt-container" id="logo-prompt">Loading logo...</div>
+
+    <div class="game-boards">
+        <div class="board-wrapper">
+            <div class="board-title">Your Memory Drawing</div>
+            <canvas id="drawCanvas" width="350" height="350"></canvas>
+        </div>
+        
+        <div class="board-wrapper">
+            <div class="board-title">Actual Logo Reference</div>
+            <div class="reveal-box">
+                <div class="hidden-overlay" id="overlay">?</div>
+                <div id="svg-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-clear" onclick="clearCanvas()">Clear Canvas</button>
+        <button class="btn-reveal" onclick="revealLogo()">Reveal Answer</button>
+        <button class="btn-next" onclick="nextLogo()">Next Logo</button>
+    </div>
+
+    <script>
+        // Library of simple built-in vector logos so the code functions offline smoothly
+        const logos = [
+            {
+                name: "Target (The Store)",
+                svg: `<svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#CC0000"/><circle cx="50" cy="50" r="27" fill="white"/><circle cx="50" cy="50" r="10" fill="#CC0000"/></svg>`
+            },
+            {
+                name: "McDonald's (The Golden Arches)",
+                svg: `<svg width="200" height="200" viewBox="0 0 100 100"><path d="M20 80 C20 30, 45 30, 50 60 C55 30, 80 30, 80 80" fill="none" stroke="#FFC72C" stroke-width="12" stroke-linecap="round"/></svg>`
+            },
+            {
+                name: "Pepsi (The Circle)",
+                svg: `<svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#004B87"/><path d="M6 50 C 15 20, 85 20, 94 50 C 75 75, 25 75, 6 50" fill="white"/><path d="M7 44 C 20 20, 80 15, 93 42 C 70 25, 30 30, 7 44" fill="#DA291C"/></svg>`
+            },
+            {
+                name: "Mastercard",
+                svg: `<svg width="220" height="200" viewBox="0 0 160 100"><circle cx="55" cy="50" r="40" fill="#EB001B" fill-opacity="0.9"/><circle cx="105" cy="50" r="40" fill="#F79E1B" fill-opacity="0.9"/></svg>`
+            },
+            {
+                name: "Channel (Double C)",
+                svg: `<svg width="200" height="200" viewBox="0 0 100 100"><path d="M45 20 A 25 25 0 1 0 45 80 M55 20 A 25 25 0 1 1 55 80" fill="none" stroke="black" stroke-width="10"/></svg>`
+            }
+        ];
+
+        let currentIdx = 0;
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const promptDisplay = document.getElementById('logo-prompt');
+        const overlay = document.getElementById('overlay');
+        const svgContainer = document.getElementById('svg-container');
+
+        let isDrawing = false;
+
+        // Initialize Canvas settings
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#0f172a'; // Deep slate drawing color
+
+        // Drawing Events
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => { startDrawing(e.touches[0]); e.preventDefault(); });
+        canvas.addEventListener('touchmove', (e) => { draw(e.touches[0]); e.preventDefault(); });
+        window.addEventListener('touchend', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            ctx.beginPath();
+            const rect = canvas.getBoundingClientRect();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function revealLogo() {
+            overlay.style.display = 'none';
+        }
+
+        function nextLogo() {
+            clearCanvas();
+            overlay.style.display = 'flex';
+            
+            // Go to next logo index loop
+            currentIdx = (currentIdx + 1) % logos.length;
+            loadLogo();
+        }
+
+        function loadLogo() {
+            promptDisplay.textContent = `Draw the ${logos[currentIdx].name}`;
+            svgContainer.innerHTML = logos[currentIdx].svg;
+        }
+
+        // Run on page load
+        loadLogo();
+    </script>
+</body>
+</html>

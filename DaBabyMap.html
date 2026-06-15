@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby Map Tracker Game</title>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            color: #f472b6;
+            margin-bottom: 5px;
+            font-size: 28px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(244, 114, 182, 0.3);
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .score-board {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background-color: #1e293b;
+            padding: 10px 30px;
+            border-radius: 20px;
+            border: 2px solid #334155;
+            color: #38bdf8;
+        }
+
+        /* US Map Container using CSS Grid for a simplified arcade-style state layout */
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 55px);
+            grid-template-rows: repeat(8, 45px);
+            gap: 4px;
+            background-color: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .state {
+            background-color: #334155;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .state:hover {
+            background-color: #475569;
+            color: white;
+        }
+
+        .state:active {
+            transform: scale(0.9);
+        }
+
+        /* Flash animation when a baby is "born" in that state */
+        .state.flash {
+            background-color: #fbbf24 !important;
+            color: #0f172a !important;
+            box-shadow: 0 0 15px #fbbf24;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        /* Empty grid spacers */
+        .empty {
+            visibility: hidden;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>👶 Baby Map Tracker</h1>
+    <div class="subtitle">Click the flashing state where a baby is born to catch the delivery!</div>
+
+    <div class="score-board">Score: <span id="score-val">0</span></div>
+
+    <div class="map-grid" id="map"></div>
+
+    <script>
+        // Web Audio API Synth to create a cute "pop" sound when flashing/clicking without external assets
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playPopSound(freq, type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type || 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // Layout map structure [Row, Column, State Code]
+        const stateLayout = [
+            [0,0,"AK"], [0,11,"ME"],
+            [1,1,"WA"], [1,2,"ID"], [1,3,"MT"], [1,4,"ND"], [1,5,"MN"], [1,6,"IL"], [1,7,"MI"], [1,9,"NY"], [1,10,"MA"], [1,11,"NH"],
+            [2,1,"OR"], [2,2,"NV"], [2,3,"WY"], [2,4,"SD"], [2,5,"IA"], [2,6,"IN"], [2,7,"OH"], [2,8,"PA"], [2,9,"NJ"], [2,10,"CT"], [2,11,"VT"],
+            [3,1,"CA"], [3,2,"UT"], [3,3,"CO"], [3,4,"NE"], [3,5,"MO"], [3,6,"KY"], [3,7,"WV"], [3,8,"MD"], [3,9,"DE"], [3,10,"RI"],
+            [4,2,"AZ"], [4,3,"NM"], [4,4,"KS"], [4,5,"AR"], [4,6,"TN"], [4,7,"VA"], [4,8,"NC"],
+            [5,4,"OK"], [5,5,"LA"], [5,6,"MS"], [5,7,"AL"], [5,8,"GA"], [5,9,"SC"],
+            [6,0,"HI"], [6,4,"TX"], [6,9,"FL"]
+        ];
+
+        const mapGrid = document.getElementById('map');
+        const scoreVal = document.getElementById('score-val');
+        let score = 0;
+        let activeStateEl = null;
+        let gameTimer = null;
+
+        // Build grid system
+        const gridCells = [];
+        for (let r = 0; r < 7; r++) {
+            gridCells[r] = [];
+            for (let c = 0; c < 12; c++) {
+                gridCells[r][c] = { type: 'empty' };
+            }
+        }
+
+        // Place states into map array
+        stateLayout.forEach(([r, c, code]) => {
+            gridCells[r][c] = { type: 'state', code: code };
+        });
+
+        // Render Map Elements
+        const stateElements = [];
+        for (let r = 0; r < 7; r++) {
+            for (let c = 0; c < 12; c++) {
+                const cell = gridCells[r][c];
+                const div = document.createElement('div');
+                
+                if (cell.type === 'state') {
+                    div.className = 'state';
+                    div.textContent = cell.code;
+                    div.dataset.code = cell.code;
+                    div.addEventListener('click', () => handleStateClick(div));
+                    stateElements.push(div);
+                } else {
+                    div.className = 'empty';
+                }
+                mapGrid.appendChild(div);
+            }
+        }
+
+        // Handle Birth simulation loop
+        function triggerRandomBirth() {
+            // Remove previous flash if active
+            if (activeStateEl) {
+                activeStateEl.classList.remove('flash');
+            }
+
+            // Pick a completely random state to flash
+            const randomIdx = Math.floor(Math.random() * stateElements.length);
+            activeStateEl = stateElements[randomIdx];
+            activeStateEl.classList.add('flash');
+
+            // Play small ambient notification tone
+            playPopSound(440, 'triangle');
+        }
+
+        // Check if player clicked the right state
+        function handleStateClick(element) {
+            if (element.classList.contains('flash')) {
+                score += 10;
+                scoreVal.textContent = score;
+                element.classList.remove('flash');
+                activeStateEl = null;
+                
+                // Play rewarding higher chime sound
+                playPopSound(880, 'sine');
+
+                // Instantly trigger next birth event ahead of schedule
+                clearInterval(gameTimer);
+                triggerRandomBirth();
+                gameTimer = setInterval(triggerRandomBirth, 2000);
+            } else {
+                // Deduct point if clicked blindly
+                if (score > 0) score -= 2;
+                scoreVal.textContent = score;
+                playPopSound(220, 'sawtooth');
+            }
+        }
+
+        // Start running the simulation loop every 2 seconds
+        triggerRandomBirth();
+        gameTimer = setInterval(triggerRandomBirth, 2000);
+    </script>
+</body>
+</html>

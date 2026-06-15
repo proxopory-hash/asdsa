@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Paint Tower Defense</title>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        h1 {
+            color: #38bdf8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Drawing Studio Screen */
+        #studio-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #111827;
+            padding: 25px;
+            border-radius: 16px;
+            border: 2px solid #1f2937;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            text-align: center;
+            width: 320px;
+        }
+
+        .studio-canvas-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+            border: 3px solid #334155;
+        }
+
+        #studioCanvas {
+            background-color: #ffffff;
+            cursor: crosshair;
+            display: block;
+        }
+
+        /* Game Screen */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            background-color: #111827;
+            padding: 12px 30px;
+            border-radius: 30px;
+            border: 1px solid #1f2937;
+        }
+
+        #gold-val { color: #eab308; }
+        #lives-val { color: #f43f5e; }
+        #score-val { color: #10b981; }
+
+        .game-container {
+            background-color: #111827;
+            padding: 8px;
+            border-radius: 16px;
+            border: 2px solid #1f2937;
+        }
+
+        #gameCanvas {
+            background-color: #030712;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Shop Controls */
+        .shop-container {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .shop-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+
+        button:disabled {
+            background: #374151;
+            color: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.4;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .instructions {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="studio-screen">
+        <h2 id="studio-title" style="color: #ef4444; margin: 0 0 5px 0;">1. Light Ship</h2>
+        <div class="instructions" id="studio-instructions">Draw the FAST enemy. Face RIGHT!</div>
+        
+        <div class="studio-canvas-container">
+            <canvas id="studioCanvas" width="120" height="120"></canvas>
+        </div>
+
+        <div style="display: flex; gap: 10px; width: 100%;">
+            <button onclick="clearStudio()" style="background: #4b5563; flex: 1;">Clear</button>
+            <button id="next-studio-btn" onclick="saveCurrentDrawing()" style="flex: 2;">Confirm Paint</button>
+        </div>
+    </div>
+
+    <div id="game-screen">
+        <h1>🚀 Tactical Paint Defense</h1>
+        
+        <div class="status-bar">
+            <div>Credits: $<span id="gold-val">200</span></div>
+            <div>Shields: ❤️<span id="lives-val">10</span></div>
+            <div>Score: ⭐<span id="score-val">0</span></div>
+        </div>
+
+        <div class="game-container">
+            <canvas id="gameCanvas" width="600" height="400"></canvas>
+        </div>
+
+        <div class="shop-container">
+            <div class="shop-buttons">
+                <button id="buy-turret-btn" onclick="selectTowerToPlace('turret')">Turret ($100)</button>
+                <button id="buy-soldier-btn" onclick="selectTowerToPlace('soldier')">Heavy Soldier ($175)</button>
+            </div>
+            <div class="instructions" id="placement-info">Select a defense unit above, then click on the grid fields to build!</div>
+        </div>
+    </div>
+
+    <script>
+        // Drawing canvases setup
+        const sCanvas = document.getElementById('studioCanvas');
+        const sCtx = sCanvas.getContext('2d');
+        const studioTitle = document.getElementById('studio-title');
+        const studioInstructions = document.getElementById('studio-instructions');
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const goldVal = document.getElementById('gold-val');
+        const livesVal = document.getElementById('lives-val');
+        const scoreVal = document.getElementById('score-val');
+
+        // Studio progression configuration array
+        let currentStep = 0;
+        const drawingSteps = [
+            { title: "1. Light Ship", inst: "Draw the FAST enemy. Face RIGHT!", color: "#ef4444" },
+            { title: "2. Heavy Boss", inst: "Draw the SLOW tank boss enemy. Face RIGHT!", color: "#b91c1c" },
+            { title: "3. Plasma Turret", inst: "Draw your standard gun turret barrel. Face RIGHT!", color: "#38bdf8" },
+            { title: "4. Heavy Soldier", inst: "Draw your HIGH DAMAGE mech/soldier. Face RIGHT!", color: "#a855f7" }
+        ];
+
+        // Extracted artwork containers
+        const artImages = { lightEnemy: new Image(), heavyEnemy: new Image(), turret: new Image(), soldier: new Image() };
+        let isStudioDrawing = false;
+
+        // Initialize design brush environment settings
+        sCtx.lineWidth = 6;
+        sCtx.lineCap = 'round';
+        sCtx.lineJoin = 'round';
+        sCtx.strokeStyle = drawingSteps[0].color;
+
+        // Canvas Painter Event Listeners
+        sCanvas.addEventListener('mousedown', (e) => { isStudioDrawing = true; sCtx.beginPath(); sCtx.moveTo(e.offsetX, e.offsetY); });
+        sCanvas.addEventListener('mousemove', (e) => { if(isStudioDrawing) { sCtx.lineTo(e.offsetX, e.offsetY); sCtx.stroke(); } });
+        window.addEventListener('mouseup', () => isStudioDrawing = false);
+
+        sCanvas.addEventListener('touchstart', (e) => { isStudioDrawing = true; sCtx.beginPath(); const r = sCanvas.getBoundingClientRect(); sCtx.moveTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); e.preventDefault(); });
+        sCanvas.addEventListener('touchmove', (e) => { if(isStudioDrawing) { const r = sCanvas.getBoundingClientRect(); sCtx.lineTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); sCtx.stroke(); } e.preventDefault(); });
+        window.addEventListener('touchend', () => isStudioDrawing = false);
+
+        function clearStudio() { sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); }
+
+        function saveCurrentDrawing() {
+            const dataUrl = sCanvas.toDataURL();
+            if (currentStep === 0) artImages.lightEnemy.src = dataUrl;
+            else if (currentStep === 1) artImages.heavyEnemy.src = dataUrl;
+            else if (currentStep === 2) artImages.turret.src = dataUrl;
+            else if (currentStep === 3) artImages.soldier.src = dataUrl;
+
+            currentStep++;
+            clearStudio();
+
+            if (currentStep < drawingSteps.length) {
+                // Load Next Step UI Settings
+                const next = drawingSteps[currentStep];
+                studioTitle.textContent = next.title;
+                studioTitle.style.color = next.color;
+                studioInstructions.textContent = next.inst;
+                sCtx.strokeStyle = next.color;
+            } else {
+                // Studio completed -> open game screen viewport
+                document.getElementById('studio-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+                initGame();
+            }
+        }
+
+        // --- TOWER DEFENSE RUNTIME ENGINE ---
+        let gold = 200;
+        let lives = 10;
+        let score = 0;
+        let selectedTypeToPlace = null; // 'turret' or 'soldier'
+        let gameOver = false;
+
+        const path = [
+            {x: 0, y: 75}, {x: 200, y: 75}, {x: 200, y: 275},
+            {x: 450, y: 275}, {x: 450, y: 125}, {x: 600, y: 125}
+        ];
+
+        let enemies = [];
+        let towers = [];
+        let projectiles = [];
+        let spawnTimer = 0;
+        let spawnRate = 70;
+
+        function initGame() {
+            canvas.addEventListener('click', (e) => {
+                if (!selectedTypeToPlace) return;
+                const cost = selectedTypeToPlace === 'turret' ? 100 : 175;
+                if (gold < cost) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                if (isOnPath(mouseX, mouseY)) return;
+
+                // Configure stats based on selected placement unit type
+                if (selectedTypeToPlace === 'turret') {
+                    towers.push({ x: mouseX, y: mouseY, type: 'turret', range: 120, cooldown: 0, fireRate: 20, damage: 4, bulletColor: '#38bdf8', size: 4, angle: 0 });
+                } else if (selectedTypeToPlace === 'soldier') {
+                    towers.push({ x: mouseX, y: mouseY, type: 'soldier', range: 160, cooldown: 0, fireRate: 50, damage: 18, bulletColor: '#c084fc', size: 7, angle: 0 }); // Heavy Class Artillery Stats
+                }
+
+                gold -= cost;
+                selectedTypeToPlace = null;
+                resetShopButtons();
+                updateUI();
+            });
+
+            updateUI();
+            gameLoop();
+        }
+
+        function selectTowerToPlace(type) {
+            selectedTypeToPlace = (selectedTypeToPlace === type) ? null : type;
+            resetShopButtons();
+            if (selectedTypeToPlace) {
+                document.getElementById(`buy-${type}-btn`).classList.add('active');
+            }
+        }
+
+        function resetShopButtons() {
+            document.getElementById('buy-turret-btn').classList.remove('active');
+            document.getElementById('buy-soldier-btn').classList.remove('active');
+        }
+
+        function isOnPath(x, y) {
+            if (x < 220 && y > 50 && y < 100) return true;
+            if (x > 175 && x < 225 && y > 50 && y < 300) return true;
+            if (x > 175 && x < 475 && y > 250 && y < 300) return true;
+            if (x > 425 && x < 475 && y > 100 && y < 300) return true;
+            if (x > 425 && y > 100 && y < 150) return true;
+            return false;
+        }
+
+        function updateUI() {
+            goldVal.textContent = gold;
+            livesVal.textContent = lives;
+            scoreVal.textContent = score;
+            document.getElementById('buy-turret-btn').disabled = (gold < 100);
+            document.getElementById('buy-soldier-btn').disabled = (gold < 175);
+        }
+
+        function drawMapGrid() {
+            ctx.strokeStyle = '#111827';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+            for(let j=0; j<canvas.height; j+=40) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke(); }
+
+            ctx.strokeStyle = 'rgba(30, 41, 59, 0.8)';
+            ctx.lineWidth = 44;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+            ctx.stroke();
+        }
+
+        function gameLoop() {
+            if (gameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMapGrid();
+
+            // Spawn Control logic
+            spawnTimer++;
+            if (spawnTimer >= spawnRate) {
+                spawnTimer = 0;
+                // Alternate spawning scouts and armored bosses
+                const isHeavy = Math.random() < 0.3; 
+                if (!isHeavy) {
+                    enemies.push({ x: path[0].x, y: path[0].y, pathIndex: 0, speed: 1.8, hp: 15 + Math.floor(score/3), maxHp: 15 + Math.floor(score/3), type: 'light', value: 15, angle: 0 });
+                } else {
+                    enemies.push({ x: path[0].x, y: path[0].y, pathIndex: 0, speed: 0.8, hp: 55 + Math.floor(score), maxHp: 55 + Math.floor(score), type: 'heavy', value: 35, angle: 0 });
+                }
+            }
+
+            // Update & Process Enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let enemy = enemies[i];
+                let targetNode = path[enemy.pathIndex + 1];
+
+                let dx = targetNode.x - enemy.x;
+                let dy = targetNode.y - enemy.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                enemy.angle = Math.atan2(dy, dx);
+
+                if (dist < enemy.speed) {
+                    enemy.pathIndex++;
+                    if (enemy.pathIndex >= path.length - 1) {
+                        lives -= (enemy.type === 'heavy' ? 3 : 1); // Heavy boss takes 3 lives if it breaches base defense
+                        enemies.splice(i, 1);
+                        updateUI();
+                        if (lives <= 0) { gameOver = true; handleGameOver(); }
+                        continue;
+                    }
+                } else {
+                    enemy.x += (dx / dist) * enemy.speed;
+                    enemy.y += (dy / dist) * enemy.speed;
+                }
+
+                // Render custom enemy art template mapping indices
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+                ctx.rotate(enemy.angle);
+                const size = enemy.type === 'heavy' ? 46 : 32;
+                ctx.drawImage(enemy.type === 'heavy' ? artImages.heavyEnemy : artImages.lightEnemy, -size/2, -size/2, size, size);
+                ctx.restore();
+
+                // Draw Health Indicator Bars
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+                ctx.fillRect(enemy.x - 15, enemy.y - 25, 30, 4);
+                ctx.fillStyle = enemy.type === 'heavy' ? '#b91c1c' : '#f43f5e';
+                ctx.fillRect(enemy.x - 15, enemy.y - 25, (enemy.hp / enemy.maxHp) * 30, 4);
+            }
+
+            // Update & Process Towers
+            towers.forEach(tower => {
+                // Foundation circular structure frame plates
+                ctx.fillStyle = tower.type === 'soldier' ? '#2e1065' : '#1e293b';
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(tower.x, tower.y, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+                let target = null;
+                for (let enemy of enemies) {
+                    let tDx = enemy.x - tower.x;
+                    let tDy = enemy.y - tower.y;
+                    if (Math.sqrt(tDx*tDx + tDy*tDy) <= tower.range) {
+                        target = enemy;
+                        tower.angle = Math.atan2(tDy, tDx);
+                        break;
+                    }
+                }
+
+                if (tower.cooldown > 0) {
+                    tower.cooldown--;
+                } else if (target) {
+                    projectiles.push({ x: tower.x, y: tower.y, target: target, speed: tower.type === 'soldier' ? 8 : 6, damage: tower.damage, color: tower.bulletColor, size: tower.size });
+                    tower.cooldown = tower.fireRate;
+                }
+
+                // Render matching hand painted structural assets
+                ctx.save();
+                ctx.translate(tower.x, tower.y);
+                ctx.rotate(tower.angle);
+                ctx.drawImage(tower.type === 'soldier' ? artImages.soldier : artImages.turret, -18, -18, 36, 36);
+                ctx.restore();
+            });
+
+            // Update & Process Flying Energy Projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                if (!enemies.includes(p.target)) { projectiles.splice(i, 1); continue; }
+
+                let pDx = p.target.x - p.x;
+                let pDy = p.target.y - p.y;
+                let pDist = Math.sqrt(pDx*pDx + pDy*pDy);
+
+                if (pDist < p.speed) {
+                    p.target.hp -= p.damage;
+                    if (p.target.hp <= 0) {
+                        let idx = enemies.indexOf(p.target);
+                        if (idx > -1) {
+                            gold += p.target.value; score += p.target.value;
+                            enemies.splice(idx, 1);
+                            updateUI();
+                        }
+                    }
+                    projectiles.splice(i, 1);
+                } else {
+                    p.x += (pDx / pDist) * p.speed;
+                    p.y += (pDy / pDist) * p.speed;
+
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = p.size * 2;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function handleGameOver() {
+            ctx.fillStyle = "rgba(3, 7, 18, 0.95)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#f43f5e";
+            ctx.font = "bold 32px system-ui";
+            ctx.textAlign = "center";
+            ctx.fillText("LINE BREACHED. GAME OVER.", canvas.width / 2, canvas.height / 2);
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "16px system-ui";
+            ctx.fillText("Refresh the window page to draw a new defense team!", canvas.width / 2, canvas.height / 2 + 45);
+        }
+    </script>
+</body>
+</html>
