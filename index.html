@@ -4,77 +4,639 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Untitled</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        h1 {
+            color: #38bdf8;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 26px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 25px;
+            font-size: 15px;
+            text-align: center;
+        }
+
+        /* Master Viewport Grid Container */
+        .arcade-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        /* Card Frame Configurations */
+        .arcade-card {
+            background-color: #111827;
+            border: 2px solid #1f2937;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card-header {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .baby-theme { color: #f472b6; }
+        .logo-theme { color: #38bdf8; }
+
+        /* --- MODULE ONE: BABY TRACKER STYLES --- */
+        .hover-indicator {
+            min-height: 24px;
+            font-size: 14px;
+            color: #f472b6;
+            font-weight: 600;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .hud-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .score-board {
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #1e293b;
+            padding: 8px 20px;
+            border-radius: 15px;
+            border: 2px solid #334155;
+            color: #38bdf8;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .combo-board {
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #1e293b;
+            padding: 8px 20px;
+            border-radius: 15px;
+            border: 2px solid #334155;
+            color: #ec4899;
+            min-width: 80px;
+            text-align: center;
+            transition: transform 0.1s ease;
+        }
+
+        .combo-bump { transform: scale(1.15); }
+
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 44px);
+            grid-template-rows: repeat(7, 36px);
+            gap: 4px;
+            background-color: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+        }
+
+        .state {
+            background-color: #334155;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.15s, transform 0.1s;
+            border: 1px solid #475569;
+        }
+
+        .state:hover { background-color: #475569; color: white; }
+        .state:active { transform: scale(0.9); }
+        .state.flash {
+            background-color: #fbbf24 !important;
+            color: #0f172a !important;
+            border-color: #f59e0b !important;
+            box-shadow: 0 0 12px #fbbf24;
+            animation: pulse 0.4s infinite alternate;
+        }
+        .empty { visibility: hidden; }
+
+        /* --- MODULE TWO: LOGO DRAW STYLES --- */
+        .prompt-container {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background-color: #1e293b;
+            padding: 8px 25px;
+            border-radius: 20px;
+            border: 2px solid #334155;
+            color: #fbbf24;
+            text-align: center;
+            min-height: 22px;
+            display: flex;
+            align-items: center;
+        }
+
+        .boards-split {
+            display: flex;
+            gap: 15px;
+        }
+
+        .canvas-frame {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .frame-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        canvas {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .reveal-box {
+            width: 260px;
+            height: 260px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #svg-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hidden-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1e293b;
+            color: #475569;
+            font-size: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            border-radius: 12px;
+            transition: opacity 0.2s ease;
+        }
+
+        .toolbar {
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            padding: 8px 15px;
+            border-radius: 10px;
+            margin-top: 12px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            width: 226px;
+            justify-content: space-between;
+        }
+
+        .tool-group { display: flex; align-items: center; gap: 5px; }
+        .tool-label { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; }
+        
+        .color-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.1s;
+        }
+        .color-swatch:hover { transform: scale(1.15); }
+        .color-swatch.active { border-color: #ffffff; transform: scale(1.1); }
+        .brush-slider { width: 60px; accent-color: #38bdf8; cursor: pointer; }
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+        }
+
+        /* --- GLOBAL ENGINE OVERLAY SYSTEM --- */
+        .master-shield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.95);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+        }
+
+        button {
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        button:hover { transform: translateY(-1px); }
+
+        .btn-action {
+            padding: 16px 36px;
+            font-size: 18px;
+            background-color: #38bdf8;
+            color: #0f172a;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+            border-radius: 8px;
+        }
+        .btn-action:hover { background-color: #0ea5e9; }
+
+        .btn-clear { background-color: #475569; color: white; }
+        .btn-clear:hover { background-color: #334155; }
+        .btn-reveal { background-color: #10b981; color: white; }
+        .btn-reveal:hover { background-color: #059669; }
+        .btn-next { background-color: #2563eb; color: white; }
+        .btn-next:hover { background-color: #1d4ed8; }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1 id="secret-title" style="cursor: pointer;">Untitled</h1>
-        <p>A collection of interactive games and distractions.</p>
-    </header>
+    <h1>Arcade Command Center</h1>
+    <div class="subtitle">Log live country data metrics on the left while recreating corporate branding visuals from memory on the right!</div>
 
-    <main class="grid-container">
-        <a href="games/clicker.html" class="card">
-            <div class="card-icon">🖱️</div>
-            <h2 title="Are you actually going to click a million times?">The Million Clicker</h2>
-            <p>will you click it?</p>
-        </a>
-
-        <a href="games/SpendMunygame.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Spend All the Money</h2>
-            <p>empty out the pockets.</p>
-        </a>
-
-             <a href="games/TowerDefance.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Tower or somthing</h2>
-            <p>empty out the pockets.</p>
-        </a>
-
-           <a href="games/Sandboxles.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Sandboxles</h2>
-            <p>empty out the pockets.</p>
-        </a>
-
-               <a href="games/DaBabyMap.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Da Baby</h2>
-            <p>Da baby map.</p>
-        </a>
-
-
-        <a href="games/DrawLogosFrom.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">�</div>
-            <h2>Draw Logos</h2>
-            <p>draw some cool logos or somthing.</p>
-        </a>
-
-                <a href="games/ThePerfectSicla.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">o</div>
-            <h2>the circle</h2>
-            <p>no.</p>
-        </a>
-
+    <div class="arcade-container">
         
-        <a href="games/snake.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">�</div>
-            <h2>the snake game</h2>
-            <p>eat the apples.</p>
-        </a>
+        <div class="master-shield" id="global-lock">
+            <button class="btn-action" onclick="bootArcadeCores()">Initialize Dashboard Terminals</button>
+        </div>
 
-        <a href="#" class="card coming-soon" onclick="alert('Patience is a virtue... or you could just inspect the element! 🚀'); return false;">
-            <div class="card-icon">⏳</div>
-            <h2>Coming Soon</h2>
-            <p>More weird experiments are on the way.</p>
-        </a>
-    </main>
+        <div class="arcade-card">
+            <div class="card-header baby-theme">👶 Live Birth Matrix Tracker</div>
+            <div class="hover-indicator" id="hover-banner">Hover over a state node</div>
 
-    <footer>
-        <p>&copy; 2026 Untitled</p>
-    </footer>
+            <div class="hud-panel">
+                <div class="score-board">Score: <span id="score-val">0</span></div>
+                <div class="combo-board" id="combo-card">Mult: x<span id="combo-val">1</span></div>
+            </div>
 
-    <script src="index.js"></script>
+            <div class="map-grid" id="map"></div>
+        </div>
+
+        <div class="arcade-card">
+            <div class="card-header logo-theme">🎨 Recall Drawing Engine</div>
+            <div class="prompt-container" id="logo-prompt">Loading prompt...</div>
+
+            <div class="boards-split">
+                <div class="canvas-frame">
+                    <span class="frame-label">Your Sketch Canvas</span>
+                    <canvas id="drawCanvas" width="260" height="260"></canvas>
+                    
+                    <div class="toolbar">
+                        <div class="tool-group">
+                            <span class="tool-label">Ink:</span>
+                            <div class="color-swatch active" style="background-color: #0f172a;" data-color="#0f172a"></div>
+                            <div class="color-swatch" style="background-color: #dc2626;" data-color="#dc2626"></div>
+                            <div class="color-swatch" style="background-color: #2563eb;" data-color="#2563eb"></div>
+                            <div class="color-swatch" style="background-color: #16a34a;" data-color="#16a34a"></div>
+                            <div class="color-swatch" style="background-color: #ca8a04;" data-color="#ca8a04"></div>
+                        </div>
+                        <div class="tool-group">
+                            <span class="tool-label">Size:</span>
+                            <input type="range" class="brush-slider" id="brushSize" min="2" max="15" value="5">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="canvas-frame">
+                    <span class="frame-label">Actual Vector Reference</span>
+                    <div class="reveal-box">
+                        <div id="svg-container"></div>
+                        <div class="hidden-overlay" id="overlay">?</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-clear" onclick="clearCanvas()">Clear</button>
+                <button class="btn-reveal" onclick="revealLogo()">Reveal</button>
+                <button class="btn-next" onclick="nextLogo()">Next Logo</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA DICTIONARIES & SCHEMAS ---
+        const stateNames = {
+            "AK": "Alaska", "ME": "Maine", "WA": "Washington", "ID": "Idaho", "MT": "Montana",
+            "ND": "North Dakota", "MN": "Minnesota", "IL": "Illinois", "MI": "Michigan", "NY": "New York",
+            "MA": "Massachusetts", "NH": "New Hampshire", "OR": "Oregon", "NV": "Nevada", "WY": "Wyoming",
+            "SD": "South Dakota", "IA": "Iowa", "IN": "Indiana", "OH": "Ohio", "PA": "Pennsylvania",
+            "NJ": "New Jersey", "CT": "Connecticut", "VT": "Vermont", "CA": "California", "UT": "Utah",
+            "CO": "Colorado", "NE": "Nebraska", "MO": "Missouri", "KY": "Kentucky", "WV": "West Virginia",
+            "MD": "Maryland", "DE": "Delaware", "RI": "Rhode Island", "AZ": "Arizona", "NM": "New Mexico",
+            "KS": "Kansas", "AR": "Arkansas", "TN": "Tennessee", "VA": "Virginia", "NC": "North Carolina",
+            "OK": "Oklahoma", "LA": "Louisiana", "MS": "Mississippi", "AL": "Alabama", "GA": "Georgia",
+            "SC": "South Carolina", "HI": "Hawaii", "TX": "Texas", "FL": "Florida"
+        };
+
+        const stateLayout = [
+            [0,0,"AK"], [0,11,"ME"],
+            [1,1,"WA"], [1,2,"ID"], [1,3,"MT"], [1,4,"ND"], [1,5,"MN"], [1,6,"IL"], [1,7,"MI"], [1,9,"NY"], [1,10,"MA"], [1,11,"NH"],
+            [2,1,"OR"], [2,2,"NV"], [2,3,"WY"], [2,4,"SD"], [2,5,"IA"], [2,6,"IN"], [2,7,"OH"], [2,8 salvage,"PA"], [2,9,"NJ"], [2,10,"CT"], [2,11,"VT"],
+            [3,1,"CA"], [3,2,"UT"], [3,3,"CO"], [3,4,"NE"], [3,5,"MO"], [3,6,"KY"], [3,7,"WV"], [3,8,"MD"], [3,9,"DE"], [3,10,"RI"],
+            [4,2,"AZ"], [4,3,"NM"], [4,4,"KS"], [4,5,"AR"], [4,6,"TN"], [4,7,"VA"], [4,8,"NC"],
+            [5,4,"OK"], [5,5,"LA"], [5,6,"MS"], [5,7,"AL"], [5,8,"GA"], [5,9,"SC"],
+            [6,0,"HI"], [6,4,"TX"], [6,9,"FL"]
+        ];
+
+        // Ensure indices cleanly match matrix bounds
+        stateLayout[22] = [2,8,"PA"]; 
+
+        const logos = [
+            {
+                name: "Target (The Store)",
+                svg: `<svg width="180" height="180" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#CC0000"/><circle cx="50" cy="50" r="27" fill="white"/><circle cx="50" cy="50" r="10" fill="#CC0000"/></svg>`
+            },
+            {
+                name: "McDonald's (The Golden Arches)",
+                svg: `<svg width="180" height="180" viewBox="0 0 100 100"><path d="M20 75 C 20 20, 46 20, 50 52 C 54 20, 80 20, 80 75" fill="none" stroke="#FFC72C" stroke-width="14" stroke-linecap="round"/></svg>`
+            },
+            {
+                name: "Pepsi (The Global Globe)",
+                svg: `<svg width="180" height="180" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#004B87"/><path d="M6 46 C 25 12, 75 12, 94 46 Z" fill="#DA291C"/><path d="M5 54 C 20 54, 30 82, 55 82 C 75 82, 88 64, 95 54 C 90 78, 72 95, 50 95 C 26 95, 9 76, 5 54 Z" fill="#FFFFFF"/></svg>`
+            },
+            {
+                name: "Mastercard",
+                svg: `<svg width="180" height="180" viewBox="0 0 160 100"><circle cx="55" cy="50" r="40" fill="#EB001B" fill-opacity="0.95"/><circle cx="105" cy="50" r="40" fill="#F79E1B" fill-opacity="0.95"/></svg>`
+            },
+            {
+                name: "Chanel (Double C)",
+                svg: `<svg width="180" height="180" viewBox="0 0 100 100"><path d="M 42 20 A 26 26 0 1 0 42 80 M 58 20 A 26 26 0 1 1 58 80" fill="none" stroke="#000000" stroke-width="11" stroke-linecap="square"/></svg>`
+            }
+        ];
+
+        // --- GLOBAL APPARATUS STATE MATRICES ---
+        let audioCtx = null;
+        let trackerScore = 0;
+        let trackerCombo = 1;
+        let activeStateEl = null;
+        let trackerInterval = null;
+        const stateElements = [];
+
+        let currentLogoIdx = 0;
+        let isDrawing = false;
+        let selectedColor = '#0f172a';
+
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const brushSlider = document.getElementById('brushSize');
+        const overlay = document.getElementById('overlay');
+        const svgContainer = document.getElementById('svg-container');
+        const promptDisplay = document.getElementById('logo-prompt');
+
+        // --- INTERACTIVE ENGINE INITIALIZATION BOOT ---
+        function bootArcadeCores() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            document.getElementById('global-lock').style.display = 'none';
+            
+            // Fire active automated routine intervals
+            triggerRandomBirth();
+            trackerInterval = setInterval(triggerRandomBirth, 2000);
+        }
+
+        // Procedural Web Audio Synth Trigger
+        function playWaveTone(freq, type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.12);
+            } catch (e) { console.warn(e); }
+        }
+
+        // --- CONSTRUCTING CORE GRID MATRIX MAP ---
+        const mapGrid = document.getElementById('map');
+        const gridCells = Array.from({ length: 7 }, () => Array(12).fill(null).map(() => ({ type: 'empty' })));
+        
+        stateLayout.forEach(([r, c, code]) => {
+            gridCells[r][c] = { type: 'state', code: code };
+        });
+
+        for (let r = 0; r < 7; r++) {
+            for (let c = 0; c < 12; c++) {
+                const cell = gridCells[r][c];
+                const div = document.createElement('div');
+                
+                if (cell.type === 'state') {
+                    div.className = 'state';
+                    div.textContent = cell.code;
+                    div.dataset.code = cell.code;
+                    
+                    div.addEventListener('mouseenter', () => {
+                        document.getElementById('hover-banner').textContent = stateNames[cell.code] || cell.code;
+                    });
+                    div.addEventListener('mouseleave', () => {
+                        document.getElementById('hover-banner').textContent = "Hover over a state node";
+                    });
+                    div.addEventListener('click', () => handleStateClick(div));
+                    stateElements.push(div);
+                } else {
+                    div.className = 'empty';
+                }
+                mapGrid.appendChild(div);
+            }
+        }
+
+        // --- TRACKER LOGIC STREAM ---
+        function triggerRandomBirth() {
+            if (activeStateEl) {
+                activeStateEl.classList.remove('flash');
+                resetComboTracker();
+            }
+            const randomIdx = Math.floor(Math.random() * stateElements.length);
+            activeStateEl = stateElements[randomIdx];
+            activeStateEl.classList.add('flash');
+            playWaveTone(440, 'triangle');
+        }
+
+        function handleStateClick(element) {
+            if (element.classList.contains('flash')) {
+                trackerScore += 10 * trackerCombo;
+                document.getElementById('score-val').textContent = trackerScore;
+                
+                element.classList.remove('flash');
+                activeStateEl = null;
+
+                if (trackerCombo < 5) trackerCombo++;
+                document.getElementById('combo-val').textContent = trackerCombo;
+                
+                const card = document.getElementById('combo-card');
+                card.classList.remove('combo-bump');
+                void card.offsetWidth;
+                card.classList.add('combo-bump');
+
+                playWaveTone(800 + (trackerCombo * 50), 'sine');
+
+                clearInterval(trackerInterval);
+                triggerRandomBirth();
+                trackerInterval = setInterval(triggerRandomBirth, 2000);
+            } else {
+                if (trackerScore > 0) trackerScore = Math.max(0, trackerScore - 5);
+                document.getElementById('score-val').textContent = trackerScore;
+                resetComboTracker();
+                playWaveTone(170, 'sawtooth');
+            }
+        }
+
+        function resetComboTracker() {
+            trackerCombo = 1;
+            document.getElementById('combo-val').textContent = trackerCombo;
+        }
+
+        // --- CANVAS WORKBENCH SKETCH LOGIC ---
+        function initBrushSettings() {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = brushSlider.value;
+            ctx.strokeStyle = selectedColor;
+        }
+
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                selectedColor = e.target.getAttribute('data-color');
+                e.target.classList.add('active');
+                ctx.strokeStyle = selectedColor;
+            });
+        });
+
+        brushSlider.addEventListener('input', (e) => { ctx.lineWidth = e.target.value; });
+
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => { startDrawing(e.touches[0]); e.preventDefault(); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { draw(e.touches[0]); e.preventDefault(); }, { passive: false });
+        window.addEventListener('touchend', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            ctx.beginPath();
+            const coords = getCoords(e);
+            ctx.moveTo(coords.x, coords.y);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const coords = getCoords(e);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() { isDrawing = false; }
+        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+        function revealLogo() {
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 200);
+        }
+
+        function nextLogo() {
+            clearCanvas();
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+            currentLogoIdx = (currentLogoIdx + 1) % logos.length;
+            loadLogoData();
+        }
+
+        function loadLogoData() {
+            promptDisplay.textContent = `Target Identity: ${logos[currentLogoIdx].name}`;
+            svgContainer.innerHTML = logos[currentLogoIdx].svg;
+            initBrushSettings();
+        }
+
+        // Preliminary structural initialization pass
+        loadLogoData();
+    </script>
 </body>
 </html>
