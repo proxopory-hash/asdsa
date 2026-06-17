@@ -3,78 +3,788 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Untitled</title>
-    <link rel="stylesheet" href="style.css">
+    <title>untitled</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --text-color: #f1f5f9;
+            --card-bg: #1e293b;
+            --card-hover: #334155;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --grid-columns: repeat(auto-fill, minmax(220px, 1fr));
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f8fafc;
+            --text-color: #0f172a;
+            --card-bg: #ffffff;
+            --card-hover: #f1f5f9;
+            --accent-color: #4f46e5;
+            --accent-hover: #4338ca;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto 40px auto;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="light"] header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .nav-btn {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        [data-theme="light"] .nav-btn {
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .nav-btn:hover {
+            background: var(--card-hover);
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: var(--grid-columns);
+            gap: 20px;
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: left;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 180px;
+        }
+
+        [data-theme="light"] .game-card {
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .game-card:hover {
+            transform: translateY(-4px);
+            background: var(--card-hover);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+            border-color: var(--accent-color);
+        }
+
+        .game-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .game-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .game-card p {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            line-height: 1.4;
+        }
+
+        .view {
+            display: none;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .back-bar {
+            margin-bottom: 24px;
+        }
+
+        .settings-panel {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .btn-action {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .btn-action:hover {
+            background: var(--accent-hover);
+        }
+
+        /* --- REAL TWO-PHONE LIVE CHAT UI --- */
+        .chat-setup-panel {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            max-width: 450px;
+            margin: 0 auto;
+        }
+
+        .phone-chat-app {
+            background: #111827;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            height: 600px;
+            max-width: 450px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        [data-theme="light"] .phone-chat-app {
+            background: #f1f5f9;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .phone-header {
+            background: rgba(0,0,0,0.3);
+            padding: 16px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        [data-theme="light"] .phone-header {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .phone-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 75%;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .msg-bubble.me {
+            background: var(--accent-color);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-bubble.peer {
+            background: #374151;
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        [data-theme="light"] .msg-bubble.peer {
+            background: #cbd5e1;
+            color: #0f172a;
+        }
+
+        .phone-footer {
+            padding: 16px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            gap: 10px;
+        }
+
+        .phone-footer input {
+            flex: 1;
+            padding: 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            color: var(--text-color);
+            outline: none;
+            font-size: 0.95rem;
+            padding-left: 18px;
+        }
+
+        [data-theme="light"] .phone-footer input {
+            background: #fff;
+            color: #000;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .phone-footer button {
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 0 20px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Zombie Canvas */
+        canvas {
+            background: #090d16;
+            display: block;
+            margin: 20px auto;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .score-banner {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .interactive-app-wrapper {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .game-input-field {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            outline: none;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+        }
+        [data-theme="light"] .game-input-field {
+            background: #fff;
+            color: #000;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
 
     <header>
-        <h1 id="secret-title" style="cursor: pointer;">Untitled</h1>
-        <p>A collection of interactive games and distractions.</p>
+        <h1 onclick="showView('dashboard-view')">untitled</h1>
+        <button class="nav-btn" onclick="showView('settings-view')">⚙️ Options</button>
     </header>
 
-    <main class="grid-container">
-        <a href="games/clicker.html" class="card">
-            <div class="card-icon">🖱️</div>
-            <h2 title="Are you actually going to click a million times?">The Million Clicker</h2>
-            <p>will you click it?</p>
-        </a>
+    <div class="main-container">
+        <div id="dashboard-view" class="view active">
+            <div class="dashboard" id="game-grid"></div>
+        </div>
 
-        <a href="games/SpendMunygame.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Spend All the Money</h2>
-            <p>empty out the pockets.</p>
-        </a>
+        <div id="settings-view" class="view">
+            <div class="back-bar"><button class="nav-btn" onclick="showView('dashboard-view')">← Back Home</button></div>
+            <div class="settings-panel">
+                <h2>Preferences</h2>
+                <div class="setting-row">
+                    <span>Light Mode</span>
+                    <input type="checkbox" id="theme-toggle" style="transform: scale(1.3); cursor: pointer;" onchange="toggleTheme()">
+                </div>
+            </div>
+        </div>
 
-             <a href="games/TowerDefance.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Tower or somthing</h2>
-            <p>empty out the pockets.</p>
-        </a>
+        <div id="game-chat" class="view">
+            <div class="back-bar"><button class="nav-btn" onclick="showView('dashboard-view');">← Back Home</button></div>
+            
+            <div id="chat-setup" class="chat-setup-panel">
+                <h3 style="margin-bottom:12px;">Link Your Phones</h3>
+                <p style="font-size:0.9rem; opacity:0.7; margin-bottom:20px;">Open this same game on your friend's phone, type matching room codes, and start chatting instantly over the web.</p>
+                <input type="text" id="chat-room-id" class="game-input-field" placeholder="Enter Room Code (e.g., 5555)" value="1234"><br>
+                <button class="btn-action" onclick="connectToRemoteChat()">Connect Devices</button>
+            </div>
 
-           <a href="games/Sandboxles.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Sandboxles</h2>
-            <p>empty out the pockets.</p>
-        </a>
+            <div id="chat-app-screen" class="phone-chat-app" style="display:none;">
+                <div class="phone-header">
+                    <span id="room-display-status">🔴 Connecting...</span>
+                    <span style="font-size:0.8rem; opacity:0.6;" id="room-code-tag">Room: 1234</span>
+                </div>
+                <div class="phone-messages" id="remote-msg-container">
+                    <div class="msg-bubble peer">System: Connected! Send messages to your friend's phone.</div>
+                </div>
+                <div class="phone-footer">
+                    <input type="text" id="remote-chat-input" placeholder="Type message..." onkeydown="if(event.key==='Enter') sendRemoteMessage()">
+                    <button onclick="sendRemoteMessage()">Send</button>
+                </div>
+            </div>
+        </div>
 
-               <a href="games/DaBabyMap.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">💰</div>
-            <h2>Da Baby</h2>
-            <p>Da baby map.</p>
-        </a>
+        <div id="game-zombies" class="view">
+            <div class="back-bar"><button class="nav-btn" onclick="stopZombieGame(); showView('dashboard-view');">← Leave Game</button></div>
+            <div style="text-align:center;">
+                <h2>Zombie Arena Outbreak</h2>
+                <div class="score-banner" id="zombie-score">Score: 0 &middot; Time: 0s</div>
+                <canvas id="zombieCanvas" width="750" height="420"></canvas>
+                <button class="btn-action" onclick="startZombieGame()" style="margin-bottom: 20px;">Restart Arena</button>
+                <div style="display:flex; justify-content:center; gap:40px; font-size:0.9rem; opacity:0.8;">
+                    <div><b style="color:var(--accent-color)">Player 1 (Blue):</b> W, A, S, D Keys</div>
+                    <div><b style="color:var(--success-color)">Player 2 (Green):</b> Arrow Keys</div>
+                </div>
+            </div>
+        </div>
 
+        <div id="generic-game-view" class="view">
+            <div class="back-bar"><button class="nav-btn" onclick="showView('dashboard-view')">← Back Home</button></div>
+            <div class="interactive-app-wrapper">
+                <span id="gen-icon" style="font-size: 4rem; display:block; margin-bottom:12px;">🎮</span>
+                <h2 id="gen-title" style="margin-bottom: 8px; font-size:2rem;">Game</h2>
+                <p id="gen-desc" style="opacity: 0.7; margin-bottom: 24px; font-size:1rem;"></p>
+                <div id="gen-interactive"></div>
+            </div>
+        </div>
+    </div>
 
-        <a href="games/DrawLogosFrom.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">�</div>
-            <h2>Draw Logos</h2>
-            <p>draw some cool logos or somthing.</p>
-        </a>
+    <script>
+        const gamesList = [
+            { id: 'chat', title: 'Cross-Device Chat', icon: '💬', desc: 'Real live messenger setup! Connect your phone with your friend’s phone using a shared room code.' },
+            { id: 'zombies', title: 'Zombie Co-op', icon: '🧟', desc: 'Survival run! Player 1 uses WASD, Player 2 uses Arrows.' },
+            { id: 'clicker', title: 'Hyper Clicker', icon: '⚡', desc: 'Tap at lightspeeds to purchase upgrades and compound hits.' },
+            { id: 'guesser', title: 'The Number Matrix', icon: '🔮', desc: 'The AI picked a number from 1-50. Can you deduce it?' },
+            { id: 'coin', title: 'Quantum Flipper', icon: '🪙', desc: 'Pure probability engine. Flip for heads or tails.' },
+            { id: 'dice', title: 'Chances Roller', icon: '🎲', desc: 'Roll dynamic physics-based twin combinations.' },
+            { id: 'color', title: 'Palette Forge', icon: '🎨', desc: 'Instantly generate gorgeous randomized UI designer asset codes.' },
+            { id: 'clock', title: 'Perfect Timing', icon: '⏱️', desc: 'Skill test. Stop the millisecond clock right on a flat target.' },
+            { id: 'fortune', title: 'Mystic Core 8', icon: '🔮', desc: 'Query the supreme oracle matrix for an absolute truth.' },
+            { id: 'sound', title: 'Oscillator Synthesizer', icon: '🔊', desc: 'Generate high fidelity musical audio sound frequencies.' },
+            { id: 'compliment', title: 'Serotonin Engine', icon: '💖', desc: 'Instant positive mood enhancement affirmations.' },
+            { id: 'words', title: 'Dynamic Metrics', icon: '📝', desc: 'Realtime live processing word velocity character analytics analyzer.' },
+            { id: 'fact', title: 'Curiosity Vault', icon: '💡', desc: 'Extract completely wild, validated facts from history archives.' },
+            { id: 'password', title: 'Vault Code Vault', icon: '🔑', desc: 'Spawn highly unbreakable randomized military-grade keyphrases.' },
+            { id: 'rps', title: 'R-P-S Master Strategy', icon: '🪨', desc: 'Go toe-to-toe against a high-predictive machine AI opponent.' },
+            { id: 'math', title: 'Grid Equation Speedrun', icon: '🧮', desc: 'Solve basic rapid calculations against a shrinking clock.' },
+            { id: 'caps', title: 'Aggressive Parser', icon: '🔠', desc: 'Instantly transform strings into hyper-bold formatted layouts.' },
+            { id: 'progress', title: 'Patience Simulator', icon: '⏳', desc: 'A mock idle loading test bar built to test zen mastery.' },
+            { id: 'mood', title: 'Aura Radiance Sensor', icon: '🎭', desc: 'Scans your click telemetry matrix pattern to evaluate mood vibes.' },
+            { id: 'binary', title: 'Machine Code Core', icon: '🤖', desc: 'Translate alphanumeric integers instantly into raw computer binary code.' },
+            { id: 'squish', title: 'Bubble Popper Matrix', icon: '🔴', desc: 'Fidget satisfaction pop tracker circles.' },
+            { id: 'gravity', title: 'Orbital Anchor Point', icon: '🪐', desc: 'Simulate micro planet mass points fields.' }
+        ];
 
-                <a href="games/ThePerfectSicla.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">o</div>
-            <h2>the circle</h2>
-            <p>no.</p>
-        </a>
+        const grid = document.getElementById('game-grid');
+        gamesList.forEach(game => {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.onclick = () => launchGame(game.id, game.title, game.icon, game.desc);
+            card.innerHTML = `
+                <div>
+                    <div class="game-icon">${game.icon}</div>
+                    <h3>${game.title}</h3>
+                </div>
+                <p>${game.desc}</p>
+            `;
+            grid.appendChild(card);
+        });
 
-        
-        <a href="games/snake.html" class="card">
-            <div class="card-icon" id="money-icon" style="cursor: pointer;">�</div>
-            <h2>the snake game</h2>
-            <p>eat the apples.</p>
-        </a>
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
 
-        <a href="#" class="card coming-soon" onclick="alert('Patience is a virtue... or you could just inspect the element! 🚀'); return false;">
-            <div class="card-icon">⏳</div>
-            <h2>Coming Soon</h2>
-            <p>More weird experiments are on the way.</p>
-        </a>
-    </main>
+        function launchGame(id, title, icon, desc) {
+            if (id === 'chat') showView('game-chat');
+            else if (id === 'zombies') { showView('game-zombies'); startZombieGame(); }
+            else { setupGenericGame(id, title, icon, desc); showView('generic-game-view'); }
+        }
 
-    <footer>
-        <p>&copy; 2026 Untitled</p>
-    </footer>
+        function toggleTheme() {
+            const isLight = document.getElementById('theme-toggle').checked;
+            document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+        }
 
-    <script src="index.js"></script>
+        /* --- REAL OVER-THE-AIR CROSS DEVICE CHAT ENGINE --- */
+        let mqttClient = null;
+        let currentRoom = "";
+        const myDeviceId = 'dev_' + Math.random().toString(36).substring(2, 9);
+
+        function connectToRemoteChat() {
+            const roomInput = document.getElementById('chat-room-id').value.trim();
+            if(!roomInput) return alert("Please type a room code!");
+            currentRoom = "untitled/chat/room_" + roomInput;
+
+            document.getElementById('chat-setup').style.display = 'none';
+            document.getElementById('chat-app-screen').style.display = 'flex';
+            document.getElementById('room-code-tag').textContent = "Room: " + roomInput;
+
+            // FIX: Using secure port 8884 so mobile browsers accept the connection instantly
+            mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+
+            mqttClient.on('connect', () => {
+                document.getElementById('room-display-status').textContent = "🟢 Online";
+                mqttClient.subscribe(currentRoom);
+            });
+
+            mqttClient.on('message', (topic, message) => {
+                try {
+                    const data = JSON.parse(message.toString());
+                    // Ignore messages sent by ourselves since we append it locally instantly
+                    if (data.senderId === myDeviceId) return;
+                    appendBubble(data.text, 'peer');
+                } catch(e) {
+                    console.error("Payload parse error", e);
+                }
+            });
+        }
+
+        function sendRemoteMessage() {
+            const inputEl = document.getElementById('remote-chat-input');
+            const msgText = inputEl.value.trim();
+            if(!msgText || !mqttClient) return;
+
+            const payload = {
+                senderId: myDeviceId,
+                text: msgText
+            };
+
+            // Send to over-the-air network
+            mqttClient.publish(currentRoom, JSON.stringify(payload));
+            
+            // Render on our screen immediately!
+            appendBubble(msgText, 'me');
+            inputEl.value = "";
+        }
+
+        function appendBubble(text, senderClass) {
+            const container = document.getElementById('remote-msg-container');
+            const bubble = document.createElement('div');
+            bubble.className = `msg-bubble ${senderClass}`;
+            bubble.textContent = senderClass === 'me' ? `You: ${text}` : `Friend: ${text}`;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        /* GAME: CO-OP ZOMBIE SURVIVAL ENGINE */
+        const canvas = document.getElementById('zombieCanvas');
+        const ctx = canvas.getContext('2d');
+        let zombieLoop, gameScore = 0, gameTime = 0, timeLoop;
+        let p1 = {}, p2 = {}, zombies = [], keys = {};
+
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        function startZombieGame() {
+            stopZombieGame();
+            p1 = { x: 250, y: 210, size: 14, speed: 4.5, color: '#6366f1', alive: true };
+            p2 = { x: 500, y: 210, size: 14, speed: 4.5, color: '#10b981', alive: true };
+            zombies = []; gameScore = 0; gameTime = 0;
+            document.getElementById('zombie-score').innerHTML = `Score: 0 &middot; Time: 0s`;
+            
+            zombieLoop = setInterval(runZombieEngine, 1000 / 60);
+            timeLoop = setInterval(() => {
+                if (p1.alive || p2.alive) {
+                    gameTime++; gameScore += 25;
+                    document.getElementById('zombie-score').innerHTML = `Score: ${gameScore} &middot; Time: ${gameTime}s`;
+                    for(let i=0; i < 1 + Math.floor(gameTime/10); i++) spawnZombie();
+                }
+            }, 1000);
+        }
+
+        function stopZombieGame() { clearInterval(zombieLoop); clearInterval(timeLoop); }
+
+        function spawnZombie() {
+            let x = Math.random() < 0.5 ? 0 : canvas.width, y = Math.random() * canvas.height;
+            zombies.push({ x: x, y: y, size: 11, speed: 1.8 + (Math.random() * 1.5) });
+        }
+
+        function runZombieEngine() {
+            if (p1.alive) {
+                if (keys['w'] && p1.y > 0) p1.y -= p1.speed; if (keys['s'] && p1.y < canvas.height) p1.y += p1.speed;
+                if (keys['a'] && p1.x > 0) p1.x -= p1.speed; if (keys['d'] && p1.x < canvas.width) p1.x += p1.speed;
+            }
+            if (p2.alive) {
+                if (keys['arrowup'] && p2.y > 0) p2.y -= p2.speed; if (keys['arrowdown'] && p2.y < canvas.height) p2.y += p2.speed;
+                if (keys['arrowleft'] && p2.x > 0) p2.x -= p2.speed; if (keys['arrowright'] && p2.x < canvas.width) p2.x += p2.speed;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            [p1, p2].forEach(p => {
+                if (p.alive) {
+                    ctx.fillStyle = p.color; ctx.shadowBlur = 15; ctx.shadowColor = p.color;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                }
+            });
+            ctx.shadowBlur = 0;
+
+            zombies.forEach(z => {
+                let target = (p1.alive && p2.alive) ? (Math.hypot(p1.x-z.x, p1.y-z.y) < Math.hypot(p2.x-z.x, p2.y-z.y) ? p1 : p2) : (p1.alive ? p1 : p2);
+                if (target) {
+                    let angle = Math.atan2(target.y - z.y, target.x - z.x);
+                    z.x += Math.cos(angle) * z.speed; z.y += Math.sin(angle) * z.speed;
+                }
+                ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(z.x, z.y, z.size, 0, Math.PI*2); ctx.fill();
+                if (p1.alive && Math.hypot(p1.x-z.x, p1.y-z.y) < p1.size+z.size) p1.alive = false;
+                if (p2.alive && Math.hypot(p2.x-z.x, p2.y-z.y) < p2.size+z.size) p2.alive = false;
+            });
+
+            if (!p1.alive && !p2.alive) {
+                ctx.fillStyle = "white"; ctx.font = "bold 36px sans-serif"; ctx.textAlign = "center";
+                ctx.fillText("ARENA OVERRUN", canvas.width/2, canvas.height/2);
+                stopZombieGame();
+            }
+        }
+
+        /* PLAYABLE INTERACTIONS ENGINE (Remaining Mini-Games Sandbox Modules) */
+        function setupGenericGame(id, title, icon, desc) {
+            document.getElementById('gen-icon').textContent = icon;
+            document.getElementById('gen-title').textContent = title;
+            document.getElementById('gen-desc').textContent = desc;
+            const target = document.getElementById('gen-interactive');
+            target.innerHTML = "";
+
+            if (id === 'clicker') {
+                let score = 0, multiplier = 1;
+                target.innerHTML = `<h3 id='c-s' style='font-size:2rem; margin-bottom:15px;'>Points: 0</h3>
+                <button class='btn-action' id='c-b'>Click For Energy</button>
+                <button class='btn-action' id='c-u' style='background:#f59e0b; margin-left:10px;'>Buy Boost (Cost 15)</button>`;
+                const cb = document.getElementById('c-b'), cs = document.getElementById('c-s'), cu = document.getElementById('c-u');
+                cb.onclick = () => { score += multiplier; cs.textContent = `Points: ${score}`; };
+                cu.onclick = () => { if(score >= 15){ score -= 15; multiplier++; cs.textContent = `Points: ${score}`; cu.textContent=`Buy Boost (Cost 15) [Level: ${multiplier}]`; } };
+            } 
+            else if (id === 'guesser') {
+                let secret = Math.floor(Math.random() * 50) + 1;
+                target.innerHTML = `<input type="number" id="g-i" class="game-input-field" placeholder="1 to 50"><br>
+                <button class="btn-action" id="g-b">Submit Guess</button><p id="g-r" style="margin-top:15px; font-weight:bold;"></p>`;
+                document.getElementById('g-b').onclick = () => {
+                    let val = parseInt(document.getElementById('g-i').value);
+                    let res = document.getElementById('g-r');
+                    if(val === secret) { res.textContent = "✨ Absolute Correct Matrix Win!"; res.style.color = "var(--success-color)"; }
+                    else { res.textContent = val > secret ? "Too high!" : "Too low!"; res.style.color = "var(--danger-color)"; }
+                };
+            }
+            else if (id === 'coin') {
+                target.innerHTML = `<h3 id="co-r" style="font-size:2rem; margin-bottom:15px;">❔</h3><button class="btn-action" id="co-b">Flip Probability</button>`;
+                document.getElementById('co-b').onclick = () => { document.getElementById('co-r').textContent = Math.random() < 0.5 ? '🪙 HEADS' : '🪙 TAILS'; };
+            }
+            else if (id === 'dice') {
+                target.innerHTML = `<h3 id="d-r" style="font-size:2rem; margin-bottom:15px;">🎲 🎲</h3><button class="btn-action" id="d-b">Roll Pair</button>`;
+                document.getElementById('d-b').onclick = () => { 
+                    let d1 = Math.floor(Math.random()*6)+1, d2 = Math.floor(Math.random()*6)+1;
+                    document.getElementById('d-r').textContent = `🎲 ${d1} & ${d2} (Total: ${d1+d2})`; 
+                };
+            }
+            else if (id === 'color') {
+                target.innerHTML = `<div id="cl-v" style="width:120px; height:120px; border-radius:12px; margin:0 auto 15px auto; background:#6366f1;"></div>
+                <h4 id="cl-t" style="margin-bottom:10px;">#6366f1</h4><button class="btn-action" id="cl-b">Forge Hex Color</button>`;
+                document.getElementById('cl-b').onclick = () => {
+                    let hex = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                    document.getElementById('cl-v').style.backgroundColor = hex;
+                    document.getElementById('cl-t').textContent = hex;
+                };
+            }
+            else if (id === 'clock') {
+                target.innerHTML = `<h3 id="t-v" style="font-size:2.5rem; margin-bottom:15px;">0.00s</h3><button class="btn-action" id="t-b">Start Timer</button>`;
+                let running = false, startTime, interval;
+                document.getElementById('t-b').onclick = function() {
+                    if(!running) {
+                        running = true; startTime = Date.now(); this.textContent = "STOP ON 2.00s!";
+                        interval = setInterval(() => { document.getElementById('t-v').textContent = ((Date.now() - startTime)/1000).toFixed(2) + 's'; }, 10);
+                    } else {
+                        running = false; clearInterval(interval); this.textContent = "Reset / Start";
+                        let finalTime = ((Date.now() - startTime)/1000).toFixed(2);
+                        alert(finalTime == "2.00" ? "🔥 Master Precision Achievement Unlocked!" : `Missed by ${Math.abs(2.00 - parseFloat(finalTime)).toFixed(2)}s!`);
+                    }
+                };
+            }
+            else if (id === 'fortune') {
+                const choices = ["Without a doubt", "Outlook vague, try again", "Absolute negative", "The matrix favors this", "Highly unlikely"];
+                target.innerHTML = `<input type="text" class="game-input-field" placeholder="Ask your question..."><br><button class="btn-action" id="f-b">Consult</button>
+                <h3 id="f-r" style="margin-top:20px; color:#a855f7;"></h3>`;
+                document.getElementById('f-b').onclick = () => { document.getElementById('f-r').textContent = choices[Math.floor(Math.random()*choices.length)]; };
+            }
+            else if (id === 'sound') {
+                target.innerHTML = `<button class="btn-action" id="s-1">Play Frequency A</button><button class="btn-action" id="s-2" style="background:#10b981; margin-left:10px;">Play Frequency B</button>`;
+                let playTone = (freq) => {
+                    let ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+                    let osc = ctxAudio.createOscillator(), gain = ctxAudio.createGain();
+                    osc.type = 'sine'; osc.frequency.value = freq; osc.connect(gain);
+                    gain.connect(ctxAudio.destination); osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, ctxAudio.currentTime + 0.5);
+                };
+                document.getElementById('s-1').onclick = () => playTone(440); document.getElementById('s-2').onclick = () => playTone(660);
+            }
+            else if (id === 'compliment') {
+                const text = ["Your creative vision is remarkably distinct.", "You think through logic beautifully.", "That energy you hold changes modules for the better."];
+                target.innerHTML = `<h3 id="co-t" style="margin-bottom:20px; font-style:italic;">"${text[0]}"</h3><button class="btn-action" id="co-g">Next Wave</button>`;
+                document.getElementById('co-g').onclick = () => { document.getElementById('co-t').textContent = `"${text[Math.floor(Math.random()*text.length)]}"`; };
+            }
+            else if (id === 'words') {
+                target.innerHTML = `<textarea id="w-t" class="game-input-field" style="height:100px; width:100%; max-width:400px; text-align:left; padding:10px;" placeholder="Start writing strings..."></textarea>
+                <h4 id="w-o" style="margin-top:10px;">Words: 0 | Characters: 0</h4>`;
+                document.getElementById('w-t').oninput = function() {
+                    let words = this.value.trim() ? this.value.trim().split(/\s+/).length : 0;
+                    document.getElementById('w-o').textContent = `Words: ${words} | Characters: ${this.value.length}`;
+                };
+            }
+            else if (id === 'fact') {
+                const facts = ["Wombat poop is completely cube-shaped.", "Clouds can weigh upwards of over a million pounds.", "The first computer bug was an actual real moth found inside a relay."];
+                target.innerHTML = `<h3 id="fa-t" style="margin-bottom:20px;">${facts[0]}</h3><button class="btn-action" id="fa-b">New Entry</button>`;
+                document.getElementById('fa-b').onclick = () => { document.getElementById('fa-t').textContent = facts[Math.floor(Math.random()*facts.length)]; };
+            }
+            else if (id === 'password') {
+                target.innerHTML = `<h3 id="p-o" style="font-family:monospace; margin-bottom:15px; letter-spacing:2px;">--------</h3><button class="btn-action" id="p-b">Generate Code</button>`;
+                document.getElementById('p-b').onclick = () => {
+                    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+                    let res = ""; for(let i=0; i<12; i++) res += chars.charAt(Math.floor(Math.random()*chars.length));
+                    document.getElementById('p-o').textContent = res;
+                };
+            }
+            else if (id === 'rps') {
+                target.innerHTML = `<button class="btn-action rps-c" data-v="🪨">🪨 Rock</button> <button class="btn-action rps-c" data-v="📄" style="background:#10b981;">📄 Paper</button> <button class="btn-action rps-c" data-v="✂️" style="background:#f59e0b;">✂️ Scissors</button>
+                <h3 id="rps-out" style="margin-top:20px;">Choose your strategy!</h3>`;
+                document.querySelectorAll('.rps-c').forEach(btn => {
+                    btn.onclick = function() {
+                        let user = this.getAttribute('data-v'), comp = ["🪨", "📄", "✂️"][Math.floor(Math.random()*3)], out = "";
+                        if(user === comp) out = "Draw Match!";
+                        else if((user==="🪨" && comp==="✂️") || (user==="📄" && comp==="🪨") || (user==="✂️" && comp==="📄")) out = "You Defeated AI!";
+                        else out = "AI Outsmarted You!";
+                        document.getElementById('rps-out').innerHTML = `You: ${user} vs AI: ${comp}<br><br><b>${out}</b>`;
+                    };
+                });
+            }
+            else if (id === 'math') {
+                let a = Math.floor(Math.random()*12)+2, b = Math.floor(Math.random()*12)+2, ans = a * b;
+                target.innerHTML = `<h3 style="font-size:2rem; margin-bottom:15px;">${a} &times; ${b} = ?</h3>
+                <input type="number" id="m-i" class="game-input-field"><br><button class="btn-action" id="m-b">Solve</button>`;
+                document.getElementById('m-b').onclick = () => {
+                    let val = parseInt(document.getElementById('m-i').value);
+                    alert(val === ans ? "Correct! Equation clear." : "Incorrect.");
+                    setupGenericGame('math', title, icon, desc);
+                };
+            }
+            else if (id === 'caps') {
+                target.innerHTML = `<input type="text" id="ca-i" class="game-input-field" placeholder="text here..."><h3 id="ca-o" style="margin-top:15px; font-weight:900;"></h3>`;
+                document.getElementById('ca-i').oninput = function() { document.getElementById('ca-o').textContent = this.value.toUpperCase(); };
+            }
+            else if (id === 'progress') {
+                target.innerHTML = `<div style="width:100%; background:rgba(255,255,255,0.1); height:24px; border-radius:12px; overflow:hidden; margin-bottom:15px;">
+                <div id="pr-b" style="background:var(--accent-color); width:0%; height:100%; transition:width 0.1s linear;"></div></div><button class="btn-action" id="pr-btn">Initiate Wait Loop</button>`;
+                document.getElementById('pr-btn').onclick = function() {
+                    let w = 0, el = document.getElementById('pr-b'); this.disabled = true;
+                    let iv = setInterval(() => { w += 2; el.style.width = w + '%'; if(w>=100){ clearInterval(iv); this.disabled = false; this.textContent="Complete Loop Again"; } }, 80);
+                };
+            }
+            else if (id === 'mood') {
+                target.innerHTML = `<button class="btn-action" id="mo-b">Scan Matrix Signature</button><h3 id="mo-o" style="margin-top:20px;"></h3>`;
+                document.getElementById('mo-b').onclick = () => {
+                    const moods = ["⚡ High-Voltage Energetic Aura", "🟢 Pristine Balanced Focus State", "🔮 Deep Cosmic Intuition", "✨ Creative Synthesis Mode"];
+                    document.getElementById('mo-o').textContent = moods[Math.floor(Math.random()*moods.length)];
+                };
+            }
+            else if (id === 'binary') {
+                target.innerHTML = `<input type="number" id="bi-i" class="game-input-field" placeholder="Enter integer"><h3 id="bi-o" style="margin-top:15px; font-family:monospace;">00000000</h3>`;
+                document.getElementById('bi-i').oninput = function() {
+                    let val = parseInt(this.value);
+                    document.getElementById('bi-o').textContent = isNaN(val) ? "0" : val.toString(2);
+                };
+            }
+            else if (id === 'squish') {
+                target.innerHTML = `<h3 id="sq-c" style="margin-bottom:15px;">Pops: 0</h3><div id="sq-t" style="width:100px; height:100px; border-radius:50%; background:var(--danger-color); margin:0 auto; cursor:pointer; transform:scale(1); transition:transform 0.1s;"></div>`;
+                let count = 0; document.getElementById('sq-t').onclick = function() {
+                    count++; document.getElementById('sq-c').textContent = `Pops: ${count}`;
+                    this.style.transform = "scale(0.85)"; setTimeout(() => this.style.transform="scale(1)", 60);
+                };
+            }
+            else if (id === 'gravity') {
+                target.innerHTML = `<h3 id="gr-o" style="margin-bottom:15px;">Orbit Distance: 1.00 AU</h3><button class="btn-action" id="gr-b">Compress Orbit</button>`;
+                let dist = 1.00; document.getElementById('gr-b').onclick = () => {
+                    dist = dist <= 0.1 ? 1.50 : dist - 0.15;
+                    document.getElementById('gr-o').textContent = `Orbit Distance: ${dist.toFixed(2)} AU`;
+                };
+            }
+        }
+    </script>
 </body>
 </html>
